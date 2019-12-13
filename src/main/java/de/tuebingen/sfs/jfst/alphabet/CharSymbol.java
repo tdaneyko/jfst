@@ -1,4 +1,4 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.alphabet;
 
 /**
  * A symbol consisting of a single character.

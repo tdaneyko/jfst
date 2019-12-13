@@ -1,4 +1,6 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.io;
+
+import de.tuebingen.sfs.jfst.alphabet.Symbol;
 
 /**
  * The original producer of a file. Currently supports SFST, HFST and JFST.

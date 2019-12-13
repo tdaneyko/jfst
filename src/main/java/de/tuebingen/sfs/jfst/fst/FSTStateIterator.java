@@ -1,4 +1,6 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.fst;
+
+import de.tuebingen.sfs.jfst.alphabet.Alphabet;
 
 /**
  * An iterator over the states and transitions of an FST.

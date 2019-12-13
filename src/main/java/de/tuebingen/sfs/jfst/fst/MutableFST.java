@@ -1,5 +1,9 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.fst;
 
+import de.tuebingen.sfs.jfst.io.FSTProducer;
+import de.tuebingen.sfs.jfst.alphabet.Alphabet;
+import de.tuebingen.sfs.jfst.alphabet.Symbol;
+import de.tuebingen.sfs.jfst.io.BinaryFSTWriter;
 import de.tuebingen.sfs.util.string.StringUtils;
 import de.tuebingen.sfs.util.bin.BufferedByteReader;
 import de.tuebingen.sfs.util.bin.IOUtils;

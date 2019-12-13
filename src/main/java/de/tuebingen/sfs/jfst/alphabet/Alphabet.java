@@ -1,4 +1,4 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.alphabet;
 
 import java.util.*;
 
@@ -20,7 +20,7 @@ public class Alphabet {
     /**
      * Create an empty Alphabet.
      */
-    Alphabet() {
+    public Alphabet() {
         alphabet = new ArrayList<>();
         id2sym = new ArrayList<>();
     }
@@ -28,7 +28,7 @@ public class Alphabet {
     /**
      * Create an Alphabet with symbols.
      */
-    Alphabet(String[] symbols) {
+    public Alphabet(String[] symbols) {
         this();
         addSymbols(symbols);
     }
@@ -36,7 +36,7 @@ public class Alphabet {
     /**
      * Create an Alphabet with symbols.
      */
-    Alphabet(Iterable<String> symbols) {
+    public Alphabet(Iterable<String> symbols) {
         this();
         addSymbols(symbols);
     }
@@ -46,7 +46,7 @@ public class Alphabet {
      * @param symbol A char symbol
      * @return True if this Alphabet already contains the symbol
      */
-    boolean contains(char symbol) {
+    public boolean contains(char symbol) {
         return Collections.binarySearch(alphabet, symbol) >= 0;
     }
 
@@ -55,7 +55,7 @@ public class Alphabet {
      * @param symbol A string symbol
      * @return True if this Alphabet already contains the symbol
      */
-    boolean contains(String symbol) {
+    public boolean contains(String symbol) {
         return Collections.binarySearch(alphabet, symbol) >= 0;
     }
 
@@ -65,7 +65,7 @@ public class Alphabet {
      * @param symbol A string symbol
      * @return The Symbol object associated with this string
      */
-    Symbol getSymbol(String symbol) {
+    public Symbol getSymbol(String symbol) {
         int i = Collections.binarySearch(alphabet, symbol);
         if (i < 0) {
             i = -(i+1);
@@ -80,14 +80,14 @@ public class Alphabet {
      * @param id An id
      * @return The symbol with this id or null if there is no such symbol
      */
-    Symbol getSymbol(int id) {
+    public Symbol getSymbol(int id) {
         if (id < id2sym.size())
             return id2sym.get(id);
         else
             return null;
     }
 
-    void setSymbol(int id, String symbol) {
+    private void setSymbol(int id, String symbol) {
         if (id >= id2sym.size())
             addSymbol(symbol);
         else {
@@ -99,7 +99,7 @@ public class Alphabet {
         }
     }
 
-    List<Symbol> getPrefixes(String s, int start) {
+    public List<Symbol> getPrefixes(String s, int start) {
         List<Symbol> prefixes = new ArrayList<>();
         char c = s.charAt(start);
 //        int i = Collections.binarySearch(alphabet, c);
@@ -121,7 +121,7 @@ public class Alphabet {
      * Add a symbol to the alphabet. Calls getSymbol() internally.
      * @param symbol A symbol
      */
-    void addSymbol(String symbol) {
+    public void addSymbol(String symbol) {
         getSymbol(symbol);
     }
 
@@ -129,7 +129,7 @@ public class Alphabet {
      * Add multiple symbols to the alphabet. Calls getSymbol() internally.
      * @param symbols An array of symbols
      */
-    void addSymbols(String[] symbols) {
+    public void addSymbols(String[] symbols) {
         int i = 0;
         for (String sym : symbols) {
             if (sym == null)
@@ -143,7 +143,7 @@ public class Alphabet {
      * Add multiple symbols to the alphabet. Calls getSymbol() internally.
      * @param symbols A list of symbols
      */
-    void addSymbols(Iterable<String> symbols) {
+    public void addSymbols(Iterable<String> symbols) {
         for (String sym : symbols) {
             if (sym == null)
                 addSymbol("NULL");
@@ -174,7 +174,7 @@ public class Alphabet {
      * Get the string representations of all symbols in this alphabet as an array, ordered according to their id.
      * @return An array with all symols in this alphabet
      */
-    String[] getSymbols() {
+    public String[] getSymbols() {
         return id2sym.stream().map(Symbol::asString).toArray(String[]::new);
     }
 
@@ -183,7 +183,7 @@ public class Alphabet {
      * @param symbol A string symbol
      * @return The id of the symbol in this alphabet, or -1 if it is not contained
      */
-    int idOf(String symbol) {
+    public int idOf(String symbol) {
         return (contains(symbol)) ? getSymbol(symbol).getId() : -1;
     }
 
@@ -191,7 +191,7 @@ public class Alphabet {
      * Get the total number of symbols in this alphabet.
      * @return The size of this alphabet
      */
-    int size() {
+    public int size() {
         return alphabet.size();
     }
 

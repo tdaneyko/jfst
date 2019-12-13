@@ -1,5 +1,7 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.io;
 
+import de.tuebingen.sfs.jfst.fst.FST;
+import de.tuebingen.sfs.jfst.fst.FSTStateIterator;
 import de.tuebingen.sfs.util.bin.IOUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;

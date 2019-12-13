@@ -1,4 +1,4 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.fst;
 
 import java.io.IOException;
 import java.io.OutputStream;

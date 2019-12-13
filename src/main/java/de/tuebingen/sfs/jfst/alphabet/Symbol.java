@@ -1,4 +1,4 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.alphabet;
 
 /**
  * A symbol in the alphabet of an FST.

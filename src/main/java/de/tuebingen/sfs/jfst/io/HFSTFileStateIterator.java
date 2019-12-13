@@ -1,5 +1,7 @@
-package de.tuebingen.sfs.jfst;
+package de.tuebingen.sfs.jfst.io;
 
+import de.tuebingen.sfs.jfst.alphabet.Alphabet;
+import de.tuebingen.sfs.jfst.alphabet.Symbol;
 import de.tuebingen.sfs.util.bin.BufferedByteReader;
 
 import java.io.IOException;
