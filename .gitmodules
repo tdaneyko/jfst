@@ -1,0 +1,8 @@
+[submodule "string-utils"]
+	path = string-utils
+	url = https://github.com/tdaneyko/string-utils.git
+	branch = master
+[submodule "bin-utils"]
+	path = bin-utils
+	url = https://github.com/tdaneyko/bin-utils.git
+	branch = master

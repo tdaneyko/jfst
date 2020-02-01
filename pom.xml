@@ -7,39 +7,7 @@
     <groupId>de.tuebingen.sfs</groupId>
     <artifactId>jfst</artifactId>
     <version>1.0-SNAPSHOT</version>
-	
-	<repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-	</repositories>
 
-    <dependencies>
-        <!-- Own dependencies -->
-        <dependency>
-            <groupId>com.github.tdaneyko</groupId>
-            <artifactId>string-utils</artifactId>
-            <version>v0.9</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.tdaneyko</groupId>
-            <artifactId>bin-utils</artifactId>
-            <version>v0.9</version>
-        </dependency>
-        <!-- Foreign dependencies -->
-        <dependency>
-            <groupId>net.sf.trove4j</groupId>
-            <artifactId>trove4j</artifactId>
-            <version>3.0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
     <build>
         <plugins>
             <plugin>
@@ -53,4 +21,20 @@
             </plugin>
         </plugins>
     </build>
+
+    <dependencies>
+        <!-- Foreign dependencies -->
+        <dependency>
+            <groupId>net.sf.trove4j</groupId>
+            <artifactId>trove4j</artifactId>
+            <version>3.0.3</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
 </project>
