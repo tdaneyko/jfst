@@ -4,25 +4,20 @@ import de.tuebingen.sfs.jfst.alphabet.Alphabet;
 import de.tuebingen.sfs.jfst.alphabet.Symbol;
 import de.tuebingen.sfs.jfst.io.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 
+import static de.tuebingen.sfs.jfst.fst.Transition.*;
+
 /**
  * A compact, memory-efficient FST.
  */
-public class CompactFST implements FST {
+public class CompactFST extends FST {
 
-    private static final int MAX_SUFFIX = 100;
     private static final int MAX_INSERTIONS = 15;
-
-    // Mask to get the input symbol out of a transition
-    private static final long getInSym = 0xffff000000000000L;
-    // Mask to get the output symbol out of a transition
-    private static final long getOutSym = 0x0000ffff00000000L;
-    // Mask to get the to-state out of a transition
-    private static final long getToState = 0x00000000ffffffffL;
 
     // Literal symbols used by the transliterator
     private Alphabet alphabet;
@@ -84,7 +79,7 @@ public class CompactFST implements FST {
 
     /**
      * Parse a file in AT&amp;T format into a CompactFST.
-     * Calls MutableFST.readFromATT(in, producer).makeCompact() internally.
+     * Calls MutableFSTOld.readFromATT(in, producer).makeCompact() internally.
      * @param in AT&amp;T file
      * @param producer Original producer of the file
      * @return The FST specified by the file
@@ -95,14 +90,15 @@ public class CompactFST implements FST {
 
     /**
      * Parse a file in AT&amp;T format into a CompactFST.
-     * Calls MutableFST.readFromATT(in, producer, reverse).makeCompact() internally.
+     * Calls MutableFSTOld.readFromATT(in, producer, reverse).makeCompact() internally.
      * @param in AT&amp;T file
      * @param producer Original producer of the file
      * @param reverse False: Input symbol comes before output symbol; True: Output symbol comes before input symbol
      * @return The FST specified by the file
      */
     public static CompactFST readFromATT(InputStream in, FSTProducer producer, boolean reverse) {
-        return MutableFST.readFromATT(in, producer, reverse).makeCompact();
+//        return MutableFSTOld.readFromATT(in, producer, reverse).makeCompact();
+        return new CompactFST(new ATTFileStateIterator(in, producer, reverse));
     }
 
     /**
@@ -156,31 +152,6 @@ public class CompactFST implements FST {
     }
 
     @Override
-    public void writeToBinary(OutputStream out) throws IOException {
-        BinaryFSTWriter.writeFST(out, this);
-    }
-
-    private long makeTransition(long inSym, long outSym, long toId) {
-        return (((inSym << 16) | outSym) << 32) | toId;
-    }
-
-    private int inIdFromTransition(long transition) {
-        return (int) ((transition & getInSym) >> 48);
-    }
-
-    private int outIdFromTransition(long transition) {
-        return (int) ((transition & getOutSym) >> 32);
-    }
-
-    private int toIdFromTransition(long transition) {
-        return (int) (transition & getToState);
-    }
-
-    private boolean isIdentityTransition(long transition) {
-        return inIdFromTransition(transition) == idIdx;
-    }
-
-    @Override
     public int nOfStates() {
         return stateOffsets.length;
     }
@@ -199,11 +170,8 @@ public class CompactFST implements FST {
     public CompactFSTStateIterator iter() {
         return new CompactFSTStateIterator(this);
     }
+
     public String depth;
-    @Override
-    public Set<String> apply(String in) {
-        return apply(in, null);
-    }
 
     public Set<String> apply(String in, int maxInsertions) {
         return apply(in, maxInsertions, null);
@@ -299,21 +267,6 @@ public class CompactFST implements FST {
         }
 
         return res;
-    }
-
-    @Override
-    public Set<String> prefixSearch(String prefix) {
-        return prefixSearch(prefix, MAX_SUFFIX, null);
-    }
-
-    @Override
-    public Set<String> prefixSearch(String prefix, int maxSuffix) {
-        return prefixSearch(prefix, maxSuffix, null);
-    }
-
-    @Override
-    public Set<String> prefixSearch(String prefix, Iterable<String> ignoreInInput) {
-        return prefixSearch(prefix, MAX_SUFFIX, ignoreInInput);
     }
 
     @Override
@@ -524,7 +477,7 @@ public class CompactFST implements FST {
         @Override
         public void nextState() {
             s++;
-            t = fst.stateOffsets[s];
+            t = fst.stateOffsets[s] - 1;
             tend = (s == fst.stateOffsets.length-1) ? fst.transitions.length : fst.stateOffsets[s+1];
         }
 
@@ -545,7 +498,7 @@ public class CompactFST implements FST {
 
         @Override
         public boolean identity() {
-            return fst.isIdentityTransition(fst.transitions[t]);
+            return isIdentityTransition(fst.transitions[t], fst.idIdx);
         }
 
         @Override
@@ -553,7 +506,7 @@ public class CompactFST implements FST {
             if (identity())
                 return -1;
             else
-                return fst.inIdFromTransition(fst.transitions[t]);
+                return inIdFromTransition(fst.transitions[t]);
         }
 
         @Override
@@ -561,7 +514,7 @@ public class CompactFST implements FST {
             if (identity())
                 return -1;
             else
-                return fst.outIdFromTransition(fst.transitions[t]);
+                return outIdFromTransition(fst.transitions[t]);
         }
 
         @Override
@@ -569,7 +522,7 @@ public class CompactFST implements FST {
             if (identity())
                 return -1;
             else
-                return fst.toIdFromTransition(fst.transitions[t]);
+                return toIdFromTransition(fst.transitions[t]);
         }
     }
 }

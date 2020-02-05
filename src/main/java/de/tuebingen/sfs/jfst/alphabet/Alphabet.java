@@ -187,6 +187,10 @@ public class Alphabet {
         return (contains(symbol)) ? getSymbol(symbol).getId() : -1;
     }
 
+    public int getIdOrCreate(String symbol) {
+        return getSymbol(symbol).getId();
+    }
+
     /**
      * Get the total number of symbols in this alphabet.
      * @return The size of this alphabet

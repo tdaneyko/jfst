@@ -88,7 +88,7 @@ public interface Symbol extends Comparable<Object> {
     /**
      * Get the string value of this symbol, i.e. a typecast from the underlying symbol to a string.
      * For example, this means that the epsilon should be represented as EPSILON_STRING here
-     * but as the empty string in asString()!
+     * but as the empty string in toString()!
      * @return The string value of this symbol
      */
     String asString();

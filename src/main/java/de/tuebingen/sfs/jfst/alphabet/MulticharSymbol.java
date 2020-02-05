@@ -69,7 +69,7 @@ class MulticharSymbol implements Symbol {
 
     @Override
     public boolean startsWith(char c) {
-        return symbol.charAt(0) == c;
+        return symbol.length() > 0 && symbol.charAt(0) == c;
     }
 
     @Override
