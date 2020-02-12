@@ -5,16 +5,15 @@ import de.tuebingen.sfs.jfst.alphabet.Symbol;
 import de.tuebingen.sfs.jfst.io.*;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import static de.tuebingen.sfs.jfst.fst.CompactTransition.*;
 
 /**
  * A compact, memory-efficient FST.
  */
-public class CompactFST extends FST {
-
-    private static final int MAX_INSERTIONS = 15;
+public class CompactFST2 extends ApplicableFST {
 
     // Literal symbols used by the transliterator
     private Alphabet alphabet;
@@ -29,7 +28,7 @@ public class CompactFST extends FST {
     private long[] transitions;
 
     // The start state
-    private int start = 0;
+    private int start;
     // The starting index of a state's transitions in the transitions list (index = state id).
     private int[] stateOffsets;
     // Whether a state with id index is accepting or not.
@@ -39,7 +38,7 @@ public class CompactFST extends FST {
      * Create a compact FST from a set of states with transitions and an alphabet.
      * @param iter An iterator over states and transitions
      */
-    public CompactFST(FSTStateIterator iter) {
+    public CompactFST2(FSTStateIterator iter) {
         // Set start state
         this.start = iter.getStartState();
         // Copy alphabet
@@ -81,7 +80,7 @@ public class CompactFST extends FST {
      * @param producer Original producer of the file
      * @return The FST specified by the file
      */
-    public static CompactFST readFromATT(InputStream in, FSTProducer producer) {
+    public static CompactFST2 readFromATT(InputStream in, FSTProducer producer) {
         return readFromATT(in, producer, false);
     }
 
@@ -93,9 +92,9 @@ public class CompactFST extends FST {
      * @param reverse False: Input symbol comes before output symbol; True: Output symbol comes before input symbol
      * @return The FST specified by the file
      */
-    public static CompactFST readFromATT(InputStream in, FSTProducer producer, boolean reverse) {
+    public static CompactFST2 readFromATT(InputStream in, FSTProducer producer, boolean reverse) {
 //        return MutableFSTOld.readFromATT(in, producer, reverse).makeCompact();
-        return new CompactFST(new ATTFileStateIterator(in, producer, reverse));
+        return new CompactFST2(new ATTFileStateIterator(in, producer, reverse));
     }
 
     /**
@@ -103,7 +102,7 @@ public class CompactFST extends FST {
      * @param fileName The path to the JFST file
      * @return The FST specified by the file
      */
-    public static CompactFST readFromBinary(String fileName) {
+    public static CompactFST2 readFromBinary(String fileName) {
         return readFromBinary(fileName, false);
     }
 
@@ -113,7 +112,7 @@ public class CompactFST extends FST {
      * @param producer Original producer of the file
      * @return The FST specified by the file
      */
-    public static CompactFST readFromBinary(String fileName, FSTProducer producer) {
+    public static CompactFST2 readFromBinary(String fileName, FSTProducer producer) {
         return readFromBinary(fileName, producer, false);
     }
 
@@ -123,7 +122,7 @@ public class CompactFST extends FST {
      * @param inverse If true, invert input and output symbols
      * @return The FST specified by the file
      */
-    public static CompactFST readFromBinary(String fileName, boolean inverse) {
+    public static CompactFST2 readFromBinary(String fileName, boolean inverse) {
         FSTProducer producer = (fileName.endsWith(".hfst")) ? FSTProducer.HFST : FSTProducer.JFST;
         return readFromBinary(fileName, producer, inverse);
     }
@@ -135,7 +134,7 @@ public class CompactFST extends FST {
      * @param inverse If true, invert input and output symbols
      * @return The FST specified by the file
      */
-    public static CompactFST readFromBinary(String fileName, FSTProducer producer, boolean inverse) {
+    public static CompactFST2 readFromBinary(String fileName, FSTProducer producer, boolean inverse) {
         if (producer.equals(FSTProducer.SFST)) {
             System.err.println("Cannot read SFST binary files (yet).");
             return null;
@@ -143,7 +142,7 @@ public class CompactFST extends FST {
         FSTFileStateIterator iter = (producer.equals(FSTProducer.JFST))
                 ? new JFSTFileStateIterator(fileName, inverse)
                 : new HFSTFileStateIterator(fileName, inverse);
-        CompactFST fst = new CompactFST(iter);
+        CompactFST2 fst = new CompactFST2(iter);
         iter.close();
         return fst;
     }
@@ -159,8 +158,8 @@ public class CompactFST extends FST {
     }
 
     @Override
-    public String[] getSymbols() {
-        return alphabet.getSymbols();
+    public Alphabet getAlphabet() {
+        return alphabet;
     }
 
     @Override
@@ -168,187 +167,25 @@ public class CompactFST extends FST {
         return new CompactFSTStateIterator(this);
     }
 
-    public String depth;
-
-    public Set<String> apply(String in, int maxInsertions) {
-        return apply(in, maxInsertions, null);
+    @Override
+    int getStartState() {
+        return start;
     }
 
     @Override
-    public Set<String> apply(String in, Iterable<String> ignoreInInput) {
-        return apply(in, MAX_INSERTIONS, ignoreInInput);
-    }
-
-    public Set<String> apply(String in, int maxInsertions, Iterable<String> ignoreInInput) {
-        depth = "";
-        return apply(in, 0, start, 0, maxInsertions, ignoreInInput);
-    }
-
-    private Set<String> apply(String s, int strIdx, int statIdx, int ins, int maxIns, Iterable<String> ignoreInInput) {
-        depth += "\t";
-        // String has been consumed?
-        boolean sFin = strIdx >= s.length();
-
-        // Result set
-        Set<String> res = new HashSet<>();
-
-        // Return empty string if accepting
-        if (sFin && accepting[statIdx])
-            res.add("");
-
-        int x = res.size();
-
-        // Apply ignore transitions
-        if (ignoreInInput != null) {
-            for (String ign : ignoreInInput) {
-                TransitionIterator ignIter = new TransitionIterator(ign, statIdx);
-                while (ignIter.hasNext()) {
-                    Transition trans = ignIter.next();
-                    Set<String> prev = apply(s, strIdx, trans.toState, ins, maxIns, ignoreInInput);
-                    if (isEpsilon(trans.outSym))
-                        res.addAll(prev);
-                    else {
-                        for (String r : prev)
-                            res.add(trans.outSym + r);
-                    }
-                }
-            }
-        }
-
-        // Apply epsilon transitions
-        // Apply at most maxIns epsilons
-        if (ins < maxIns) {
-            TransitionIterator epsIter = new TransitionIterator(Symbol.EPSILON_STRING, statIdx);
-            while (epsIter.hasNext()) {
-                Transition trans = epsIter.next();
-                Set<String> prev = apply(s, strIdx, trans.toState, ins + 1, maxIns, ignoreInInput);
-                if (isEpsilon(trans.outSym))
-                    res.addAll(prev);
-                else {
-                    for (String r : prev)
-                        res.add(trans.outSym + r);
-                }
-            }
-        }
-
-        // If there is a char left in the string...
-        if (!sFin) {
-            // ...apply matching literal transitions
-            for (Symbol pref : alphabet.getPrefixes(s, strIdx)) {
-                TransitionIterator litIter = new TransitionIterator(pref.asString(), statIdx);
-                while (litIter.hasNext()) {
-                    Transition trans = litIter.next();
-                    Set<String> prev = apply(s, strIdx + pref.length(), trans.toState, 0, maxIns, ignoreInInput);
-                    if (isEpsilon(trans.outSym))
-                        res.addAll(prev);
-                    else {
-                        for (String r : prev)
-                            res.add(trans.outSym + r);
-                    }
-                }
-            }
-
-            // ...and identity transitions
-            char c = s.charAt(strIdx);
-            if (!alphabet.contains(c)) {
-                TransitionIterator idIter = new TransitionIterator(Symbol.IDENTITY_STRING, statIdx);
-                while (idIter.hasNext()) {
-                    Transition trans = idIter.next();
-                    Set<String> prev = apply(s, strIdx + 1, trans.toState, 0, maxIns, ignoreInInput);
-                    for (String r : prev)
-                        res.add(c + r);
-                    if (!prev.isEmpty())
-                        break;
-                }
-            }
-        }
-
-        return res;
+    boolean isAccepting(int stateId) {
+        return accepting[stateId];
     }
 
     @Override
-    public Set<String> prefixSearch(String prefix, int maxSuffix, Iterable<String> ignoreInInput) {
-        return prefixSearch(prefix, 0, 0, maxSuffix, ignoreInInput);
+    Iterator<Transition> getTransitionIterator(int statIdx) {
+        return new TransitionIterator(statIdx);
     }
 
-    private Set<String> prefixSearch(String s, int strIdx, int statIdx, int maxSuffix, Iterable<String> ignoreInInput) {
-        // String has been consumed?
-        boolean sFin = strIdx >= s.length();
-
-        if (sFin)
-            maxSuffix--;
-
-        // Result set
-        Set<String> res = new HashSet<>();
-
-        // Return empty string if accepting
-        if (sFin && accepting[statIdx])
-            res.add("");
-
-        if (!sFin) {
-            // Apply ignore transitions
-            if (ignoreInInput != null) {
-                for (String ign : ignoreInInput) {
-                    TransitionIterator ignIter = new TransitionIterator(ign, statIdx);
-                    while (ignIter.hasNext()) {
-                        Transition trans = ignIter.next();
-                        Set<String> prev = prefixSearch(s, strIdx, trans.toState, maxSuffix, ignoreInInput);
-                            for (String r : prev)
-                                res.add(ign + r);
-                    }
-                }
-            }
-
-            // Apply epsilon transitions
-            TransitionIterator epsIter = new TransitionIterator(Symbol.EPSILON_STRING, statIdx);
-            while (epsIter.hasNext()) {
-                Transition trans = epsIter.next();
-                Set<String> prev = prefixSearch(s, strIdx, trans.toState, maxSuffix, ignoreInInput);
-                    res.addAll(prev);
-            }
-
-            // If there is a char left in the string...
-            // ...apply matching literal transitions
-            for (Symbol pref : alphabet.getPrefixes(s, strIdx)) {
-                TransitionIterator litIter = new TransitionIterator(pref.asString(), statIdx);
-                while (litIter.hasNext()) {
-                    Transition trans = litIter.next();
-                    Set<String> prev = prefixSearch(s, strIdx + pref.length(), trans.toState, maxSuffix, ignoreInInput);
-                    for (String r : prev)
-                        res.add(pref + r);
-                }
-            }
-
-            // ...and identity transitions
-            char c = s.charAt(strIdx);
-            if (!alphabet.contains(c)) {
-                TransitionIterator idIter = new TransitionIterator(Symbol.IDENTITY_STRING, statIdx);
-                while (idIter.hasNext()) {
-                    Transition trans = idIter.next();
-                    Set<String> prev = prefixSearch(s, strIdx + 1, trans.toState, maxSuffix, ignoreInInput);
-                    for (String r : prev)
-                        res.add(c + r);
-                }
-            }
-        }
-        else if (maxSuffix >= 0) {
-            TransitionIterator allIter = new TransitionIterator(statIdx);
-            while (allIter.hasNext()) {
-                Transition trans = allIter.next();
-                String inSym = trans.inSym;
-                Set<String> prev = prefixSearch(s, strIdx + inSym.length(), trans.toState, maxSuffix, ignoreInInput);
-                for (String r : prev)
-                    res.add(inSym + r);
-            }
-        }
-
-        return res;
+    @Override
+    Iterator<Transition> getTransitionIterator(String s, int statIdx) {
+        return new TransitionIterator(s, statIdx);
     }
-
-    private boolean isEpsilon(String s) {
-        return s != null && s.length() == 1 && s.charAt(0) == Symbol.EPSILON_CHAR;
-    }
-
 
     // Helper class to iterate over transitions with a specific input symbol
     private class TransitionIterator implements Iterator<Transition> {
@@ -403,36 +240,17 @@ public class CompactFST extends FST {
         }
     }
 
-    // Helper class to store a to-state and an output symbol
-    private class Transition {
-
-        final int toState;
-        final String inSym;
-        final String outSym;
-
-        public Transition(int toState, String inSym, String outSym) {
-            this.toState = toState;
-            this.inSym = inSym;
-            this.outSym = outSym;
-        }
-
-        @Override
-        public String toString() {
-            return inSym + ":" + outSym + " => " + toState;
-        }
-    }
-
 
     private static class CompactFSTStateIterator implements FSTStateIterator {
 
-        final CompactFST fst;
+        final CompactFST2 fst;
         final Alphabet alphabet;
 
         int s;
         int t;
         int tend;
 
-        public CompactFSTStateIterator(CompactFST fst) {
+        public CompactFSTStateIterator(CompactFST2 fst) {
             this.fst = fst;
             this.alphabet = new Alphabet(fst.alphabet.getSymbols());
 
@@ -516,10 +334,7 @@ public class CompactFST extends FST {
 
         @Override
         public int toId() {
-            if (identity())
-                return -1;
-            else
-                return toIdFromTransition(fst.transitions[t]);
+            return toIdFromTransition(fst.transitions[t]);
         }
     }
 }

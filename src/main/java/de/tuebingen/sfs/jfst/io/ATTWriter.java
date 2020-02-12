@@ -3,6 +3,7 @@ package de.tuebingen.sfs.jfst.io;
 import de.tuebingen.sfs.jfst.alphabet.Alphabet;
 import de.tuebingen.sfs.jfst.alphabet.Symbol;
 import de.tuebingen.sfs.jfst.fst.FST;
+import de.tuebingen.sfs.jfst.fst.FST2;
 import de.tuebingen.sfs.jfst.fst.FSTStateIterator;
 
 import java.io.*;
@@ -16,6 +17,9 @@ public class ATTWriter {
      * @throws IOException
      */
     public static void writeFST(File file, FST fst) throws IOException {
+        writeFST(file, fst.iter());
+    }
+    public static void writeFST(File file, FST2 fst) throws IOException {
         writeFST(file, fst.iter());
     }
 

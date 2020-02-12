@@ -1,6 +1,6 @@
 package de.tuebingen.sfs.jfst.fst;
 
-public class Transition implements Comparable<Transition> {
+public class CompactTransition implements Comparable<Object> {
 
     // Mask to get the input symbol out of a transition
     static final long getInSym = 0xffff000000000000L;
@@ -11,7 +11,7 @@ public class Transition implements Comparable<Transition> {
 
     private long transition;
 
-    public Transition(int inSym, int outSym, int toId) {
+    public CompactTransition(int inSym, int outSym, int toId) {
         this.transition = makeTransition(inSym, outSym, toId);
     }
 
@@ -43,15 +43,23 @@ public class Transition implements Comparable<Transition> {
         return isIdentityTransition(transition, idIdx);
     }
 
+    public long getInternalRepresentation() {
+        return transition;
+    }
+
     @Override
-    public int compareTo(Transition other) {
-        return Long.compare(this.transition, other.transition);
+    public int compareTo(Object other) {
+        if (other instanceof CompactTransition)
+            return Long.compare(this.transition, ((CompactTransition) other).transition);
+        if (other instanceof Long)
+            return Long.compare(this.transition, (Long) other);
+        return -1;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Transition)
-            return this.transition == ((Transition) obj).transition;
+        if (obj instanceof CompactTransition)
+            return this.transition == ((CompactTransition) obj).transition;
         return false;
     }
 

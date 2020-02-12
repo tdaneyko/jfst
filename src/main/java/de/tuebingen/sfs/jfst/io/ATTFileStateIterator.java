@@ -1,8 +1,7 @@
 package de.tuebingen.sfs.jfst.io;
 
 import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.fst.MutableFSTOld;
-import de.tuebingen.sfs.jfst.fst.Transition;
+import de.tuebingen.sfs.jfst.fst.CompactTransition;
 import de.tuebingen.sfs.util.string.StringUtils;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -25,8 +24,8 @@ public class ATTFileStateIterator implements FSTFileStateIterator {
     private int nTrans;
     private int start;
 
-    private TIntObjectMap<List<Transition>> transitions;
-    private List<Transition> currentTransitions;
+    private TIntObjectMap<List<CompactTransition>> transitions;
+    private List<CompactTransition> currentTransitions;
     private TIntSet accepting;
     private int s = -1;
     private int t = -1;
@@ -56,7 +55,7 @@ public class ATTFileStateIterator implements FSTFileStateIterator {
                             int toId = Integer.parseInt(fields[1]);
                             String inSym = (inverse) ? fields[3] : fields[2];
                             String outSym = (inverse) ? fields[2] : fields[3];
-                            transitions.get(id).add(new Transition(
+                            transitions.get(id).add(new CompactTransition(
                                     alphabet.getIdOrCreate(producer.convert(inSym)),
                                     alphabet.getIdOrCreate(producer.convert(outSym)),
                                     toId));

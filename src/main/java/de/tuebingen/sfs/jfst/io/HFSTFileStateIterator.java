@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,7 +50,7 @@ public class HFSTFileStateIterator implements FSTFileStateIterator {
 
     public HFSTFileStateIterator(String fileName, boolean inverse) {
         props = new HashMap<>();
-        decoder = Charset.forName("UTF-8").newDecoder();
+        decoder = StandardCharsets.UTF_8.newDecoder();
         this.inverse = inverse;
         int skip = 0;
 

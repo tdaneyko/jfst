@@ -1,6 +1,7 @@
 package de.tuebingen.sfs.jfst.io;
 
 import de.tuebingen.sfs.jfst.fst.FST;
+import de.tuebingen.sfs.jfst.fst.FST2;
 import de.tuebingen.sfs.jfst.fst.FSTStateIterator;
 import de.tuebingen.sfs.util.bin.IOUtils;
 import gnu.trove.list.TIntList;
@@ -35,6 +36,9 @@ public class BinaryFSTWriter {
      */
     public static void writeFST(OutputStream out, FST fst) throws IOException {
         writeFST(out, fst.iter(), fst.getSymbols());
+    }
+    public static void writeFST(OutputStream out, FST2 fst) throws IOException {
+        writeFST(out, fst.iter(), fst.getAlphabet().getSymbols());
     }
 
     /**
@@ -116,6 +120,8 @@ public class BinaryFSTWriter {
             // Write end of state
             out.write(STATEEND);
         }
+
+        out.close();
     }
 
 }

@@ -8,16 +8,20 @@ public abstract class MutableFST extends FST {
 
     public abstract void repeat(int min, int max);
 
+    public void repeatMin(int n) {
+        repeat(n, Integer.MAX_VALUE);
+    }
+
     public void repeatTimes(int n) {
         repeat(n, n);
     }
 
-    public void repeatStar() {
-        repeatTimes(0);
+    public void kleeneStar() {
+        repeatMin(0);
     }
 
-    public void repeatPlus() {
-        repeatTimes(1);
+    public void kleenePlus() {
+        repeatMin(1);
     }
 
     public abstract void optional();

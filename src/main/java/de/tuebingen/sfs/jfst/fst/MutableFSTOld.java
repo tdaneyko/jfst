@@ -1,6 +1,5 @@
 package de.tuebingen.sfs.jfst.fst;
 
-import de.tuebingen.sfs.jfst.io.ATTWriter;
 import de.tuebingen.sfs.jfst.io.FSTProducer;
 import de.tuebingen.sfs.jfst.alphabet.Alphabet;
 import de.tuebingen.sfs.jfst.alphabet.Symbol;
