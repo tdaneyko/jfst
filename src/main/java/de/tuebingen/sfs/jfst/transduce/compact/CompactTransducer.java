@@ -1,7 +1,6 @@
 package de.tuebingen.sfs.jfst.fst;
 
 import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.alphabet.Symbol;
 import de.tuebingen.sfs.jfst.io.*;
 
 import java.io.InputStream;
@@ -13,7 +12,7 @@ import static de.tuebingen.sfs.jfst.fst.CompactTransition.*;
 /**
  * A compact, memory-efficient FST.
  */
-public class CompactFST2 extends ApplicableFST {
+public class CompactFST extends ApplicableFST {
 
     // Literal symbols used by the transliterator
     private Alphabet alphabet;
@@ -36,7 +35,7 @@ public class CompactFST2 extends ApplicableFST {
      * Create a compact FST from a set of states with transitions and an alphabet.
      * @param iter An iterator over states and transitions
      */
-    public CompactFST2(FSTStateIterator iter) {
+    public CompactFST(FSTStateIterator iter) {
         // Set start state
         this.start = iter.getStartState();
         // Copy alphabet
@@ -71,7 +70,7 @@ public class CompactFST2 extends ApplicableFST {
      * @param producer Original producer of the file
      * @return The FST specified by the file
      */
-    public static CompactFST2 readFromATT(InputStream in, FSTProducer producer) {
+    public static CompactFST readFromATT(InputStream in, FSTProducer producer) {
         return readFromATT(in, producer, false);
     }
 
@@ -83,9 +82,9 @@ public class CompactFST2 extends ApplicableFST {
      * @param reverse False: Input symbol comes before output symbol; True: Output symbol comes before input symbol
      * @return The FST specified by the file
      */
-    public static CompactFST2 readFromATT(InputStream in, FSTProducer producer, boolean reverse) {
+    public static CompactFST readFromATT(InputStream in, FSTProducer producer, boolean reverse) {
 //        return MutableFSTOld.readFromATT(in, producer, reverse).makeCompact();
-        return new CompactFST2(new ATTFileStateIterator(in, producer, reverse));
+        return new CompactFST(new ATTFileStateIterator(in, producer, reverse));
     }
 
     /**
@@ -93,7 +92,7 @@ public class CompactFST2 extends ApplicableFST {
      * @param fileName The path to the JFST file
      * @return The FST specified by the file
      */
-    public static CompactFST2 readFromBinary(String fileName) {
+    public static CompactFST readFromBinary(String fileName) {
         return readFromBinary(fileName, false);
     }
 
@@ -103,7 +102,7 @@ public class CompactFST2 extends ApplicableFST {
      * @param producer Original producer of the file
      * @return The FST specified by the file
      */
-    public static CompactFST2 readFromBinary(String fileName, FSTProducer producer) {
+    public static CompactFST readFromBinary(String fileName, FSTProducer producer) {
         return readFromBinary(fileName, producer, false);
     }
 
@@ -113,7 +112,7 @@ public class CompactFST2 extends ApplicableFST {
      * @param inverse If true, invert input and output symbols
      * @return The FST specified by the file
      */
-    public static CompactFST2 readFromBinary(String fileName, boolean inverse) {
+    public static CompactFST readFromBinary(String fileName, boolean inverse) {
         FSTProducer producer = (fileName.endsWith(".hfst")) ? FSTProducer.HFST : FSTProducer.JFST;
         return readFromBinary(fileName, producer, inverse);
     }
@@ -125,7 +124,7 @@ public class CompactFST2 extends ApplicableFST {
      * @param inverse If true, invert input and output symbols
      * @return The FST specified by the file
      */
-    public static CompactFST2 readFromBinary(String fileName, FSTProducer producer, boolean inverse) {
+    public static CompactFST readFromBinary(String fileName, FSTProducer producer, boolean inverse) {
         if (producer.equals(FSTProducer.SFST)) {
             System.err.println("Cannot read SFST binary files (yet).");
             return null;
@@ -133,7 +132,7 @@ public class CompactFST2 extends ApplicableFST {
         FSTFileStateIterator iter = (producer.equals(FSTProducer.JFST))
                 ? new JFSTFileStateIterator(fileName, inverse)
                 : new HFSTFileStateIterator(fileName, inverse);
-        CompactFST2 fst = new CompactFST2(iter);
+        CompactFST fst = new CompactFST(iter);
         iter.close();
         return fst;
     }
@@ -234,14 +233,14 @@ public class CompactFST2 extends ApplicableFST {
 
     private static class CompactFSTStateIterator implements FSTStateIterator {
 
-        final CompactFST2 fst;
+        final CompactFST fst;
         final Alphabet alphabet;
 
         int s;
         int t;
         int tend;
 
-        public CompactFSTStateIterator(CompactFST2 fst) {
+        public CompactFSTStateIterator(CompactFST fst) {
             this.fst = fst;
             this.alphabet = new Alphabet(fst.alphabet.getSymbols());
 

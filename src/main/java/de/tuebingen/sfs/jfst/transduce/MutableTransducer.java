@@ -1,6 +1,6 @@
 package de.tuebingen.sfs.jfst.fst;
 
-public abstract class MutableFST extends FST {
+public abstract class MutableFST {
 
     public abstract void determinize();
 

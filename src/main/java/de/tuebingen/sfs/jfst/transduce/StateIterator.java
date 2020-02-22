@@ -28,11 +28,6 @@ public interface FSTStateIterator {
     int getStartState();
 
     /**
-     * @return The id of the identity symbol in the alphabet
-     */
-    int getIdentityId();
-
-    /**
      * @return True if there are still states left to iterate through
      */
     boolean hasNextState();
@@ -56,11 +51,6 @@ public interface FSTStateIterator {
      * Advance to the next transition of this state.
      */
     void nextTransition();
-
-    /**
-     * @return True if the current transition is an identity transition
-     */
-    boolean identity();
 
     /**
      * @return The integer id of the input symbol of the current literal transition (-1 if it is an identity transition)

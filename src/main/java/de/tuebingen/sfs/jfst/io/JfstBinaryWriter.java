@@ -1,7 +1,7 @@
 package de.tuebingen.sfs.jfst.io;
 
+import de.tuebingen.sfs.jfst.alphabet.Alphabet;
 import de.tuebingen.sfs.jfst.fst.FST;
-import de.tuebingen.sfs.jfst.fst.FST2;
 import de.tuebingen.sfs.jfst.fst.FSTStateIterator;
 import de.tuebingen.sfs.util.bin.IOUtils;
 import gnu.trove.list.TIntList;
@@ -18,11 +18,11 @@ public class BinaryFSTWriter {
     /**
      * Control byte that marks the end of literal transitions of an accepting state
      */
-    public static final byte ACCEPTING = (byte) 0b10000001;
+    public static final byte ACCEPTING = (byte) 0b11111111;
     /**
      * Control byte that marks the end of literal transitions of a non-accepting state
      */
-    public static final byte NONACCEPTING = (byte) 0b10000000;
+    public static final byte NONACCEPTING = (byte) 0b11111110;
     /**
      * Control byte that marks the end of a state
      */
@@ -35,10 +35,7 @@ public class BinaryFSTWriter {
      * @throws IOException
      */
     public static void writeFST(OutputStream out, FST fst) throws IOException {
-        writeFST(out, fst.iter(), fst.getSymbols());
-    }
-    public static void writeFST(OutputStream out, FST2 fst) throws IOException {
-        writeFST(out, fst.iter(), fst.getAlphabet().getSymbols());
+        writeFST(out, fst.iter(), fst.getAlphabet());
     }
 
     /**
@@ -48,16 +45,16 @@ public class BinaryFSTWriter {
      * @param alphabet Symbols used by that FST
      * @throws IOException
      */
-    public static void writeFST(OutputStream out, FSTStateIterator states, String[] alphabet) throws IOException {
+    public static void writeFST(OutputStream out, FSTStateIterator states, Alphabet alphabet) throws IOException {
         int startID = states.getStartState();
         int nStates = states.nOfStates();
         int nTrans = states.nOfTransitions();
-        int nSyms = alphabet.length;
+        int nSyms = alphabet.size();
         int a = IOUtils.bytesNeededFor(nSyms-1); // Symbol id size
         int s = IOUtils.bytesNeededFor(nStates-1); // State id size
 
         // Write alphabet to file
-        for (String sym : alphabet) {
+        for (String sym : alphabet.getSymbols()) {
             IOUtils.writeAsBytes(sym, out);
         }
         // Write extra newline to mark end of alphabet
@@ -81,10 +78,10 @@ public class BinaryFSTWriter {
             while (states.hasNextTransition()) {
                 states.nextTransition();
                 // Save identity transitions for later
-                if (states.identity())
-                    identityTransitions.add(states.toId());
+//                if (states.inId() == alphabet.identityId())
+//                    identityTransitions.add(states.toId());
                 // Write literal transition
-                else {
+//                else {
                     int toId = states.toId();
                     int inSym = states.inId();
                     int outSym = states.outId();
@@ -107,18 +104,10 @@ public class BinaryFSTWriter {
                         k--;
                     }
                     out.write(transBytes);
-                }
+//                }
             }
             // Write accepting/non-accepting
             out.write((states.accepting()) ? ACCEPTING : NONACCEPTING);
-
-            // Write identity transitions
-            for (int i = 0; i < identityTransitions.size(); i++) {
-                int toId = identityTransitions.get(i);
-                IOUtils.writeIntTruncated(toId, s, out);
-            }
-            // Write end of state
-            out.write(STATEEND);
         }
 
         out.close();

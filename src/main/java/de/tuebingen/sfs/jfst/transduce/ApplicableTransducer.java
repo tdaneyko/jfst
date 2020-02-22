@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public abstract class ApplicableFST implements FST2 {
+public abstract class ApplicableFST implements FST {
 
     private static final int MAX_SUFFIX = 100;
     private static final int MAX_INSERTIONS = 15;

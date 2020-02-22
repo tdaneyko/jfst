@@ -1,7 +1,9 @@
 package de.tuebingen.sfs.jfst;
 
-import de.tuebingen.sfs.jfst.fst.*;
-import de.tuebingen.sfs.jfst.io.FSTProducer;
+import de.tuebingen.sfs.jfst.transduce.*;
+import de.tuebingen.sfs.jfst.io.FstProducer;
+import de.tuebingen.sfs.jfst.transduce.compact.CompactTransducer;
+import de.tuebingen.sfs.jfst.transduce.compact.MutableCompactTransducer;
 import de.tuebingen.sfs.util.bin.IOUtils;
 import junit.framework.TestCase;
 
@@ -15,16 +17,16 @@ public class FSTTest extends TestCase {
 
     private static final String TEST_DIR = "src/test/resources/";
 
-    private CompactMutableFST hfst;
-    private CompactMutableFST sfst;
+    private MutableCompactTransducer hfst;
+    private MutableCompactTransducer sfst;
 
     private Map<String, Set<String>> hfstTestSet;
     private Map<String, Set<String>> sfstTestSet;
 
     @Override
     protected void setUp() throws Exception {
-        hfst = CompactMutableFST.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFST.att")), FSTProducer.HFST);
-        sfst = CompactMutableFST.readFromATT(new FileInputStream(new File(TEST_DIR + "testSFST.att")), FSTProducer.SFST);
+        hfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFST.att")), FstProducer.HFST);
+        sfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testSFST.att")), FstProducer.SFST);
 
         hfstTestSet = new HashMap<>();
 
@@ -65,18 +67,16 @@ public class FSTTest extends TestCase {
         sfstTestSet = null;
     }
 
-    public void compare(FST2 fst1, FST2 fst2, Map<String, Set<String>> testSet) {
-        System.err.println(fst1.nOfStates());
+    public void compare(Transducer fst1, Transducer fst2, Map<String, Set<String>> testSet) {
         assertEquals(fst1.nOfStates(), fst2.nOfStates());
         assertEquals(fst1.nOfTransitions(), fst2.nOfTransitions());
         for (String test : testSet.keySet()) {
-//            System.err.println(test + " " + fst1.apply(test) + " " + fst2.apply(test));
             assertEquals(fst1.apply(test), fst2.apply(test));
         }
     }
 
     public void testSimple() throws FileNotFoundException {
-        CompactMutableFST test = CompactMutableFST.readFromATT(new FileInputStream(new File(TEST_DIR + "test.att")), FSTProducer.HFST);
+        MutableCompactTransducer test = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "test.att")), FstProducer.HFST);
 
         Set<String> expected = new HashSet<>();
         expected.add("bbbbby");
@@ -84,35 +84,35 @@ public class FSTTest extends TestCase {
     }
 
     public void testMalScript2AsciiSmall() throws FileNotFoundException {
-        CompactFST2 fst = CompactFST2.readFromATT(new FileInputStream(new File(TEST_DIR + "mal-small.att")), FSTProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "mal-small.att")), FstProducer.HFST);
         Set<String> expected = new HashSet<>();
         expected.add("vaaka");
         assertEquals(expected, fst.apply("വാക"));
     }
 
     public void testMalScript2AsciiSmallFromBinary() {
-        CompactFST2 fst = CompactFST2.readFromBinary("/mal-small.hfst", FSTProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromBinary("/mal-small.hfst", FstProducer.HFST);
         Set<String> expected = new HashSet<>();
         expected.add("vaaka");
         assertEquals(expected, fst.apply("വാക"));
     }
 
     public void testMalScript2Ascii() throws FileNotFoundException {
-        CompactFST2 fst = CompactFST2.readFromATT(new FileInputStream(new File(TEST_DIR + "mal-orth2asciiprnc.att")), FSTProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "mal-orth2asciiprnc.att")), FstProducer.HFST);
         Set<String> expected = new HashSet<>();
         expected.add("vaa;n;nikkuka");
         assertEquals(expected, fst.apply("വാങ്ങിക്കുക")); //TODO
     }
 
     public void testMalScript2AsciiFromBinary() {
-        CompactFST2 fst = CompactFST2.readFromBinary("/mal-orth2asciiprnc.hfst", FSTProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromBinary("/mal-orth2asciiprnc.hfst", FstProducer.HFST);
         Set<String> expected = new HashSet<>();
         expected.add("vaa;n;nikkuka");
         assertEquals(expected, fst.apply("വാങ്ങിക്കുക")); //TODO
     }
 
     public void testEusScript2IpaFromBinary() {
-        CompactFST2 fst = CompactFST2.readFromBinary("/eus.hfst", FSTProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromBinary("/eus.hfst", FstProducer.HFST);
         Set<String> expected = new HashSet<>();
         expected.add("et͡ʃe");
         assertEquals(expected, fst.apply("etxe"));
@@ -135,7 +135,7 @@ public class FSTTest extends TestCase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        CompactMutableFST sfst2 = CompactMutableFST.readFromBinary("/testSFST.jfst");
+        MutableCompactTransducer sfst2 = MutableCompactTransducer.readFromBinary("/testSFST.jfst");
         compare(sfst, sfst2, sfstTestSet);
 
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(new File(TEST_DIR + "testHFST.jfst")))) {
@@ -143,47 +143,46 @@ public class FSTTest extends TestCase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        CompactMutableFST hfst2 = CompactMutableFST.readFromBinary("/testHFST.jfst");
+        MutableCompactTransducer hfst2 = MutableCompactTransducer.readFromBinary("/testHFST.jfst");
         compare(hfst, hfst2, hfstTestSet);
     }
 
     public void testCompactFST() throws FileNotFoundException {
-        CompactMutableFST sfst = CompactMutableFST.readFromATT(new FileInputStream(new File(TEST_DIR + "testSFST.att")), FSTProducer.SFST);
+        MutableCompactTransducer sfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testSFST.att")), FstProducer.SFST);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(new File(TEST_DIR + "testSFST.jfst")))) {
             sfst.writeToBinary(out);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        CompactFST2 sfst2 = CompactFST2.readFromBinary("/testSFST.jfst");
-        System.err.println("x" + sfst2.nOfStates());
+        CompactTransducer sfst2 = CompactTransducer.readFromBinary("/testSFST.jfst");
         compare(sfst, sfst2, sfstTestSet);
 
-        CompactMutableFST hfst = CompactMutableFST.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFST.att")), FSTProducer.HFST);
+        MutableCompactTransducer hfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFST.att")), FstProducer.HFST);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(new File(TEST_DIR + "testHFST.jfst")))) {
             hfst.writeToBinary(out);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        CompactFST2 hfst2 = CompactFST2.readFromBinary("/testHFST.jfst");
+        CompactTransducer hfst2 = CompactTransducer.readFromBinary("/testHFST.jfst");
         compare(hfst, hfst2, hfstTestSet);
     }
 
     public void testMutableToCompact() {
-        CompactFST2 sfst2 = sfst.makeCompact();
+        CompactTransducer sfst2 = sfst.makeCompact();
         compare(sfst, sfst2, sfstTestSet);
 
-        CompactFST2 hfst2 = hfst.makeCompact();
+        CompactTransducer hfst2 = hfst.makeCompact();
         compare(hfst, hfst2, hfstTestSet);
     }
 
     public void testInverse() {
         try {
-            CompactMutableFST sfst2 = CompactMutableFST.readFromATT(new FileInputStream(new File(TEST_DIR + "testSFSTinv.att")), FSTProducer.SFST);
-            CompactMutableFST hfst2 = CompactMutableFST.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFSTinv.att")), FSTProducer.HFST);
-            CompactMutableFST sfst3 = CompactMutableFST.readFromBinary("/testSFST.jfst", true);
-            CompactMutableFST hfst3 = CompactMutableFST.readFromBinary("/testHFST.jfst", true);
-            CompactFST sfst4 = CompactFST.readFromBinary("/testSFST.jfst", true);
-            CompactFST hfst4 = CompactFST.readFromBinary("/testHFST.jfst", true);
+            MutableCompactTransducer sfst2 = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testSFSTinv.att")), FstProducer.SFST);
+            MutableCompactTransducer hfst2 = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFSTinv.att")), FstProducer.HFST);
+            MutableCompactTransducer sfst3 = MutableCompactTransducer.readFromBinary("/testSFST.jfst", true);
+            MutableCompactTransducer hfst3 = MutableCompactTransducer.readFromBinary("/testHFST.jfst", true);
+            CompactTransducer sfst4 = CompactTransducer.readFromBinary("/testSFST.jfst", true);
+            CompactTransducer hfst4 = CompactTransducer.readFromBinary("/testHFST.jfst", true);
 
             for (String test : hfstTestSet.keySet()) {
                 for (String res : hfst.apply(test)) {
@@ -206,8 +205,8 @@ public class FSTTest extends TestCase {
 
     public void testPrefixSearch() {
         try {
-            CompactMutableFST mfst = CompactMutableFST.readFromATT(new FileInputStream(new File(TEST_DIR + "testPrefix.att")), FSTProducer.SFST);
-            CompactFST cfst = CompactFST.readFromATT(new FileInputStream(new File(TEST_DIR + "testPrefix.att")), FSTProducer.SFST);
+            MutableCompactTransducer mfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testPrefix.att")), FstProducer.SFST);
+            CompactTransducer cfst = CompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testPrefix.att")), FstProducer.SFST);
 
             Set<String> abc = new HashSet<>();
             abc.add("abcx");

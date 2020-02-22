@@ -1,7 +1,6 @@
 package de.tuebingen.sfs.jfst.fst;
 
 import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.alphabet.Symbol;
 import de.tuebingen.sfs.jfst.io.*;
 
 import java.io.InputStream;
@@ -14,8 +13,6 @@ public class CompactMutableFST extends ApplicableFST {
 
     // Literal symbols used by the transliterator
     private Alphabet alphabet;
-    // Id of the identity (copy) symbol
-    private final int idIdx;
 
     /*
     The transitions of the transliterator. In each long, the first 16 bit encode the input symbol,
@@ -33,7 +30,6 @@ public class CompactMutableFST extends ApplicableFST {
 
     public CompactMutableFST() {
         this.alphabet = new Alphabet();
-        this.idIdx = alphabet.getIdOrCreate(Symbol.IDENTITY_STRING);
         this.transitions = new ArrayList<>();
         this.accepting = new ArrayList<>();
         this.start = addState(false);
@@ -44,10 +40,6 @@ public class CompactMutableFST extends ApplicableFST {
         this.start = iter.getStartState();
         // Copy alphabet
         this.alphabet = iter.getAlphabet();
-        // Add identity symbol
-        this.idIdx = iter.getIdentityId();
-        if (idIdx == alphabet.size())
-            this.alphabet.addSymbol(Symbol.IDENTITY_STRING);
 
         // Initialize state and transition lists
         this.transitions = new ArrayList<>();
@@ -59,10 +51,7 @@ public class CompactMutableFST extends ApplicableFST {
             accepting.add(iter.accepting());
             while (iter.hasNextTransition()) {
                 iter.nextTransition();
-                if (iter.identity())
-                    stateTrans.add(new CompactTransition(idIdx, idIdx, iter.toId()));
-                else
-                    stateTrans.add(new CompactTransition(iter.inId(), iter.outId(), iter.toId()));
+                stateTrans.add(new CompactTransition(iter.inId(), iter.outId(), iter.toId()));
             }
             // Sort transitions for current state
             Collections.sort(stateTrans);
@@ -153,8 +142,8 @@ public class CompactMutableFST extends ApplicableFST {
     /**
      * @return The compact version of this FST
      */
-    public CompactFST2 makeCompact() {
-        return new CompactFST2(this.iter());
+    public CompactFST makeCompact() {
+        return new CompactFST(this.iter());
     }
 
     @Override
@@ -244,7 +233,7 @@ public class CompactMutableFST extends ApplicableFST {
             CompactTransition transition = stateTrans.get(i);
             int toState = transition.getToState();
             int outIdx = transition.getOutSym();
-            String out = (outIdx == idIdx) ? inC : alphabet.getSymbol(outIdx).toString();
+            String out = (outIdx == alphabet.identityId()) ? inC : alphabet.getSymbol(outIdx).toString();
             String in = (inSym == 1) ? alphabet.getSymbol(transition.getInSym()).toString() : inC;
             i++;
             return new Transition(toState, in, out);
@@ -290,11 +279,6 @@ public class CompactMutableFST extends ApplicableFST {
         }
 
         @Override
-        public int getIdentityId() {
-            return fst.idIdx;
-        }
-
-        @Override
         public boolean hasNextState() {
             return s+1 < fst.transitions.size();
         }
@@ -322,24 +306,13 @@ public class CompactMutableFST extends ApplicableFST {
         }
 
         @Override
-        public boolean identity() {
-            return stateTrans.get(t).identity(fst.idIdx);
-        }
-
-        @Override
         public int inId() {
-            if (identity())
-                return -1;
-            else
-                return stateTrans.get(t).getInSym();
+            return stateTrans.get(t).getInSym();
         }
 
         @Override
         public int outId() {
-            if (identity())
-                return -1;
-            else
-                return stateTrans.get(t).getOutSym();
+            return stateTrans.get(t).getOutSym();
         }
 
         @Override

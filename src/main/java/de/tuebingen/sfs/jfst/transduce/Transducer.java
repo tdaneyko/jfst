@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * A finite-state transducer.
  */
-public interface FST2 {
+public interface FST {
 
     /**
      * Write the FST to a file in JFST binary format.
