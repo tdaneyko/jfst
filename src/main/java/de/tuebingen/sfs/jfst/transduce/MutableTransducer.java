@@ -1,20 +1,14 @@
-package de.tuebingen.sfs.jfst.fst;
+package de.tuebingen.sfs.jfst.transduce;
 
-public abstract class MutableFST {
+public abstract class MutableTransducer extends ApplicableTransducer {
 
     public abstract void determinize();
 
     public abstract void minimize();
 
-    public abstract void repeat(int min, int max);
+    public abstract void repeat(int n);
 
-    public void repeatMin(int n) {
-        repeat(n, Integer.MAX_VALUE);
-    }
-
-    public void repeatTimes(int n) {
-        repeat(n, n);
-    }
+    public abstract void repeatMin(int n);
 
     public void kleeneStar() {
         repeatMin(0);
@@ -30,15 +24,17 @@ public abstract class MutableFST {
 
     public abstract void reverse();
 
-    public abstract void concatenate(FST other);
+    public abstract void concat(Transducer other);
 
-    public abstract void disjunct(FST other);
+    public abstract void union(Transducer other);
 
-    public abstract void priorityUnion(FST other);
+    public abstract void priorityUnion(Transducer other);
 
-    public abstract void compose(FST other);
+    public abstract void intersect(Transducer other);
 
-    public abstract void subtract(FST other);
+    public abstract void subtract(Transducer other);
+
+    public abstract void compose(Transducer other);
 
 
 }

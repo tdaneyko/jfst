@@ -1,15 +1,18 @@
-package de.tuebingen.sfs.jfst.fst;
+package de.tuebingen.sfs.jfst.transduce.compact;
 
-import de.tuebingen.sfs.jfst.alphabet.Alphabet;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
 import de.tuebingen.sfs.jfst.io.*;
+import de.tuebingen.sfs.jfst.transduce.MutableTransducer;
+import de.tuebingen.sfs.jfst.transduce.StateIterator;
+import de.tuebingen.sfs.jfst.transduce.Transducer;
 
 import java.io.InputStream;
 import java.util.*;
 
 /**
- * A mutable FST to which new states and transitions may be added.
+ * A mutable Transducer to which new states and transitions may be added.
  */
-public class CompactMutableFST extends ApplicableFST {
+public class MutableCompactTransducer extends MutableTransducer {
 
     // Literal symbols used by the transliterator
     private Alphabet alphabet;
@@ -28,14 +31,14 @@ public class CompactMutableFST extends ApplicableFST {
     // Id of next state
     private int s = 0;
 
-    public CompactMutableFST() {
+    public MutableCompactTransducer() {
         this.alphabet = new Alphabet();
         this.transitions = new ArrayList<>();
         this.accepting = new ArrayList<>();
         this.start = addState(false);
     }
 
-    public CompactMutableFST(FSTStateIterator iter) {
+    public MutableCompactTransducer(StateIterator iter) {
         // Set start state
         this.start = iter.getStartState();
         // Copy alphabet
@@ -66,103 +69,103 @@ public class CompactMutableFST extends ApplicableFST {
     }
 
     /**
-     * Parse a file in AT&amp;T format into a CompactFST.
+     * Parse a file in AT&amp;T format into a CompactTransducer.
      * Calls MutableFSTOld.readFromATT(in, producer).makeCompact() internally.
      * @param in AT&amp;T file
      * @param producer Original producer of the file
-     * @return The FST specified by the file
+     * @return The Transducer specified by the file
      */
-    public static CompactMutableFST readFromATT(InputStream in, FSTProducer producer) {
+    public static MutableCompactTransducer readFromATT(InputStream in, FstProducer producer) {
         return readFromATT(in, producer, false);
     }
 
     /**
-     * Parse a file in AT&amp;T format into a CompactFST.
+     * Parse a file in AT&amp;T format into a CompactTransducer.
      * Calls MutableFSTOld.readFromATT(in, producer, reverse).makeCompact() internally.
      * @param in AT&amp;T file
      * @param producer Original producer of the file
      * @param reverse False: Input symbol comes before output symbol; True: Output symbol comes before input symbol
-     * @return The FST specified by the file
+     * @return The Transducer specified by the file
      */
-    public static CompactMutableFST readFromATT(InputStream in, FSTProducer producer, boolean reverse) {
+    public static MutableCompactTransducer readFromATT(InputStream in, FstProducer producer, boolean reverse) {
 //        return MutableFSTOld.readFromATT(in, producer, reverse).makeCompact();
-        return new CompactMutableFST(new ATTFileStateIterator(in, producer, reverse));
+        return new MutableCompactTransducer(new AttFileStateIterator(in, producer, reverse));
     }
 
     /**
-     * Load a Compact FST from a binary JFST file.
+     * Load a Compact Transducer from a binary JFST file.
      * @param fileName The path to the JFST file
-     * @return The FST specified by the file
+     * @return The Transducer specified by the file
      */
-    public static CompactMutableFST readFromBinary(String fileName) {
+    public static MutableCompactTransducer readFromBinary(String fileName) {
         return readFromBinary(fileName, false);
     }
 
     /**
-     * Load a Compact FST from a binary FST file.
-     * @param fileName The path to the FST file
+     * Load a Compact Transducer from a binary Transducer file.
+     * @param fileName The path to the Transducer file
      * @param producer Original producer of the file
-     * @return The FST specified by the file
+     * @return The Transducer specified by the file
      */
-    public static CompactMutableFST readFromBinary(String fileName, FSTProducer producer) {
+    public static MutableCompactTransducer readFromBinary(String fileName, FstProducer producer) {
         return readFromBinary(fileName, producer, false);
     }
 
     /**
-     * Load a Compact FST from a binary JFST file.
+     * Load a Compact Transducer from a binary JFST file.
      * @param fileName The path to the JFST file
      * @param inverse If true, invert input and output symbols
-     * @return The FST specified by the file
+     * @return The Transducer specified by the file
      */
-    public static CompactMutableFST readFromBinary(String fileName, boolean inverse) {
-        FSTProducer producer = (fileName.endsWith(".hfst")) ? FSTProducer.HFST : FSTProducer.JFST;
+    public static MutableCompactTransducer readFromBinary(String fileName, boolean inverse) {
+        FstProducer producer = (fileName.endsWith(".hfst")) ? FstProducer.HFST : FstProducer.JFST;
         return readFromBinary(fileName, producer, inverse);
     }
 
     /**
-     * Load a Compact FST from a binary FST file.
-     * @param fileName The path to the FST file
+     * Load a Compact Transducer from a binary Transducer file.
+     * @param fileName The path to the Transducer file
      * @param producer Original producer of the file
      * @param inverse If true, invert input and output symbols
-     * @return The FST specified by the file
+     * @return The Transducer specified by the file
      */
-    public static CompactMutableFST readFromBinary(String fileName, FSTProducer producer, boolean inverse) {
-        if (producer.equals(FSTProducer.SFST)) {
+    public static MutableCompactTransducer readFromBinary(String fileName, FstProducer producer, boolean inverse) {
+        if (producer.equals(FstProducer.SFST)) {
             System.err.println("Cannot read SFST binary files (yet).");
             return null;
         }
-        FSTFileStateIterator iter = (producer.equals(FSTProducer.JFST))
-                ? new JFSTFileStateIterator(fileName, inverse)
-                : new HFSTFileStateIterator(fileName, inverse);
-        CompactMutableFST fst = new CompactMutableFST(iter);
+        FileStateIterator iter = (producer.equals(FstProducer.JFST))
+                ? new JfstFileStateIterator(fileName, inverse)
+                : new HfstFileStateIterator(fileName, inverse);
+        MutableCompactTransducer fst = new MutableCompactTransducer(iter);
         iter.close();
         return fst;
     }
 
     /**
-     * @return The compact version of this FST
+     * @return The compact version of this Transducer
      */
-    public CompactFST makeCompact() {
-        return new CompactFST(this.iter());
+    public CompactTransducer makeCompact() {
+        return new CompactTransducer(this.iter());
     }
 
     @Override
-    int getStartState() {
+    public int getStartState() {
         return start;
     }
 
     @Override
-    boolean isAccepting(int stateId) {
+    public boolean isAccepting(int stateId) {
         return accepting.get(stateId);
     }
 
     @Override
-    Iterator<Transition> getTransitionIterator(int statIdx) {
+    public Iterator<Transition> getTransitionIterator(int statIdx) {
         return new TransitionIterator(statIdx);
     }
 
     @Override
-    Iterator<Transition> getTransitionIterator(String s, int statIdx) {
+    public Iterator<Transition> getTransitionIterator(String s, int statIdx) {
         return new TransitionIterator(s, statIdx);
     }
 
@@ -182,8 +185,73 @@ public class CompactMutableFST extends ApplicableFST {
     }
 
     @Override
-    public FSTStateIterator iter() {
+    public StateIterator iter() {
         return new CompactFSTStateIterator(this);
+    }
+
+    @Override
+    public void determinize() {
+
+    }
+
+    @Override
+    public void minimize() {
+
+    }
+
+    @Override
+    public void repeat(int n) {
+
+    }
+
+    @Override
+    public void repeatMin(int n) {
+
+    }
+
+    @Override
+    public void optional() {
+
+    }
+
+    @Override
+    public void invert() {
+
+    }
+
+    @Override
+    public void reverse() {
+
+    }
+
+    @Override
+    public void concat(Transducer other) {
+
+    }
+
+    @Override
+    public void union(Transducer other) {
+
+    }
+
+    @Override
+    public void priorityUnion(Transducer other) {
+
+    }
+
+    @Override
+    public void intersect(Transducer other) {
+
+    }
+
+    @Override
+    public void compose(Transducer other) {
+
+    }
+
+    @Override
+    public void subtract(Transducer other) {
+
     }
 
     private class TransitionIterator implements Iterator<Transition> {
@@ -197,7 +265,7 @@ public class CompactMutableFST extends ApplicableFST {
         public TransitionIterator(String s, int statIdx) {
             inC = s;
             if (alphabet.contains(s)) {
-                long ci = alphabet.idOf(s);
+                long ci = alphabet.getId(s);
                 inSym = ci << 48;
                 stateTrans = transitions.get(statIdx);
                 i = Collections.binarySearch(stateTrans, inSym);
@@ -225,7 +293,7 @@ public class CompactMutableFST extends ApplicableFST {
         @Override
         public boolean hasNext() {
             return i < stateTrans.size() && (inSym == 1 ||
-                    (stateTrans.get(i).getInternalRepresentation() & CompactTransition.getInSym) == inSym);
+                    (stateTrans.get(i).getInternalRepresentation() & CompactTransition.GET_IN_SYM) == inSym);
         }
 
         @Override
@@ -240,9 +308,9 @@ public class CompactMutableFST extends ApplicableFST {
         }
     }
 
-    private static class CompactFSTStateIterator implements FSTStateIterator {
+    private static class CompactFSTStateIterator implements StateIterator {
 
-        final CompactMutableFST fst;
+        final MutableCompactTransducer fst;
         final Alphabet alphabet;
 
         int s;
@@ -250,7 +318,7 @@ public class CompactMutableFST extends ApplicableFST {
 
         List<CompactTransition> stateTrans;
 
-        public CompactFSTStateIterator(CompactMutableFST fst) {
+        public CompactFSTStateIterator(MutableCompactTransducer fst) {
             this.fst = fst;
             this.alphabet = new Alphabet(fst.alphabet.getSymbols());
 

@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class FSTTest extends TestCase {
+public class ApplicationAndIOTest extends TestCase {
 
     private static final String TEST_DIR = "src/test/resources/";
 

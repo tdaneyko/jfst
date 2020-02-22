@@ -1,37 +1,37 @@
-package de.tuebingen.sfs.jfst.fst;
+package de.tuebingen.sfs.jfst.transduce;
 
-import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.alphabet.Symbol;
-import de.tuebingen.sfs.jfst.io.ATTWriter;
-import de.tuebingen.sfs.jfst.io.BinaryFSTWriter;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
+import de.tuebingen.sfs.jfst.io.AttWriter;
+import de.tuebingen.sfs.jfst.io.JfstBinaryWriter;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
-public abstract class ApplicableFST implements FST {
+public abstract class ApplicableTransducer implements Transducer {
 
     private static final int MAX_SUFFIX = 100;
     private static final int MAX_INSERTIONS = 15;
 
     public void writeToBinary(OutputStream out) throws IOException {
-        BinaryFSTWriter.writeFST(out, this);
+        JfstBinaryWriter.writeFST(out, this);
     }
 
     public void writeToATT(File attFile) throws IOException {
-        ATTWriter.writeFST(attFile, this);
+        AttWriter.writeFST(attFile, this);
     }
 
-    abstract int getStartState();
+    public abstract int getStartState();
 
-    abstract boolean isAccepting(int stateId);
+    public abstract boolean isAccepting(int stateId);
 
-    abstract Iterator<Transition> getTransitionIterator(int statIdx);
+    public abstract Iterator<Transition> getTransitionIterator(int statIdx);
 
-    abstract Iterator<Transition> getTransitionIterator(String s, int statIdx);
+    public abstract Iterator<Transition> getTransitionIterator(String s, int statIdx);
 
     @Override
     public Set<String> apply(String in) {
@@ -89,7 +89,7 @@ public abstract class ApplicableFST implements FST {
         // Apply epsilon transitions
         // Apply at most maxIns epsilons
         if (ins < maxIns) {
-            Iterator<Transition> epsIter = getTransitionIterator(Symbol.EPSILON_STRING, statIdx);
+            Iterator<Transition> epsIter = getTransitionIterator(Alphabet.EPSILON_STRING, statIdx);
             while (epsIter.hasNext()) {
                 Transition trans = epsIter.next();
                 Set<String> prev = apply(s, strIdx, trans.toState, ins + 1, maxIns, ignoreInInput);
@@ -104,9 +104,10 @@ public abstract class ApplicableFST implements FST {
 
         // If there is a char left in the string...
         if (!sFin) {
+            List<String> matchingSymbols = alphabet.getPrefixes(s, strIdx);
             // ...apply matching literal transitions
-            for (Symbol pref : alphabet.getPrefixes(s, strIdx)) {
-                Iterator<Transition> litIter = getTransitionIterator(pref.asString(), statIdx);
+            for (String pref : matchingSymbols) {
+                Iterator<Transition> litIter = getTransitionIterator(pref, statIdx);
                 while (litIter.hasNext()) {
                     Transition trans = litIter.next();
                     Set<String> prev = apply(s, strIdx + pref.length(), trans.toState, 0, maxIns, ignoreInInput);
@@ -121,8 +122,8 @@ public abstract class ApplicableFST implements FST {
 
             // ...and identity transitions
             char c = s.charAt(strIdx);
-            if (!alphabet.contains(c)) {
-                Iterator<Transition> idIter = getTransitionIterator(Symbol.IDENTITY_STRING, statIdx);
+            if (matchingSymbols.isEmpty()) {
+                Iterator<Transition> idIter = getTransitionIterator(Alphabet.IDENTITY_STRING, statIdx);
                 while (idIter.hasNext()) {
                     Transition trans = idIter.next();
                     Set<String> prev = apply(s, strIdx + 1, trans.toState, 0, maxIns, ignoreInInput);
@@ -138,7 +139,7 @@ public abstract class ApplicableFST implements FST {
     }
 
     private boolean isEpsilon(String s) {
-        return s != null && s.length() == 1 && s.charAt(0) == Symbol.EPSILON_CHAR;
+        return s != null && s.equals(Alphabet.EPSILON_STRING);
     }
 
     public Set<String> prefixSearch(String prefix) {
@@ -207,7 +208,7 @@ public abstract class ApplicableFST implements FST {
             }
 
             // Apply epsilon transitions
-            Iterator<Transition> epsIter = getTransitionIterator(Symbol.EPSILON_STRING, statIdx);
+            Iterator<Transition> epsIter = getTransitionIterator(Alphabet.EPSILON_STRING, statIdx);
             while (epsIter.hasNext()) {
                 Transition trans = epsIter.next();
                 Set<String> prev = prefixSearch(s, strIdx, trans.toState, maxSuffix, ignoreInInput);
@@ -216,8 +217,9 @@ public abstract class ApplicableFST implements FST {
 
             // If there is a char left in the string...
             // ...apply matching literal transitions
-            for (Symbol pref : alphabet.getPrefixes(s, strIdx)) {
-                Iterator<Transition> litIter = getTransitionIterator(pref.asString(), statIdx);
+            List<String> matchingSymbols = alphabet.getPrefixes(s, strIdx);
+            for (String pref : matchingSymbols) {
+                Iterator<Transition> litIter = getTransitionIterator(pref, statIdx);
                 while (litIter.hasNext()) {
                     Transition trans = litIter.next();
                     Set<String> prev = prefixSearch(s, strIdx + pref.length(), trans.toState, maxSuffix, ignoreInInput);
@@ -228,8 +230,8 @@ public abstract class ApplicableFST implements FST {
 
             // ...and identity transitions
             char c = s.charAt(strIdx);
-            if (!alphabet.contains(c)) {
-                Iterator<Transition> idIter = getTransitionIterator(Symbol.IDENTITY_STRING, statIdx);
+            if (matchingSymbols.isEmpty()) {
+                Iterator<Transition> idIter = getTransitionIterator(Alphabet.IDENTITY_STRING, statIdx);
                 while (idIter.hasNext()) {
                     Transition trans = idIter.next();
                     Set<String> prev = prefixSearch(s, strIdx + 1, trans.toState, maxSuffix, ignoreInInput);
@@ -252,7 +254,7 @@ public abstract class ApplicableFST implements FST {
         return res;
     }
 
-    static class Transition {
+    public static class Transition {
 
         final int toState;
         final String inSym;

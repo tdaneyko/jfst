@@ -1,13 +1,13 @@
-package de.tuebingen.sfs.jfst.fst;
+package de.tuebingen.sfs.jfst.transduce.compact;
 
 public class CompactTransition implements Comparable<Object> {
 
     // Mask to get the input symbol out of a transition
-    static final long getInSym = 0xffff000000000000L;
+    public static final long GET_IN_SYM = 0xffff000000000000L;
     // Mask to get the output symbol out of a transition
-    static final long getOutSym = 0x0000ffff00000000L;
+    public static final long GET_OUT_SYM = 0x0000ffff00000000L;
     // Mask to get the to-state out of a transition
-    static final long getToState = 0x00000000ffffffffL;
+    public static final long GET_TO_STATE = 0x00000000ffffffffL;
 
     private long transition;
 
@@ -20,7 +20,7 @@ public class CompactTransition implements Comparable<Object> {
     }
 
     public void setInSym(int inSym) {
-        transition = (transition & ~(getInSym)) | (((long) inSym) << 48);
+        transition = (transition & ~(GET_IN_SYM)) | (((long) inSym) << 48);
     }
 
     public int getOutSym() {
@@ -28,7 +28,7 @@ public class CompactTransition implements Comparable<Object> {
     }
 
     public void setOutSym(int outSym) {
-        transition = (transition & ~(getOutSym)) | (((long) outSym) << 32);
+        transition = (transition & ~(GET_OUT_SYM)) | (((long) outSym) << 32);
     }
 
     public int getToState() {
@@ -36,7 +36,7 @@ public class CompactTransition implements Comparable<Object> {
     }
 
     public void setToState(int toState) {
-        transition = (transition & ~(getToState)) | ((long) toState);
+        transition = (transition & ~(GET_TO_STATE)) | ((long) toState);
     }
 
     public boolean identity(int idIdx) {
@@ -73,15 +73,15 @@ public class CompactTransition implements Comparable<Object> {
     }
 
     public static int inIdFromTransition(long transition) {
-        return (int) ((transition & getInSym) >> 48);
+        return (int) ((transition & GET_IN_SYM) >> 48);
     }
 
     public static int outIdFromTransition(long transition) {
-        return (int) ((transition & getOutSym) >> 32);
+        return (int) ((transition & GET_OUT_SYM) >> 32);
     }
 
     public static int toIdFromTransition(long transition) {
-        return (int) (transition & getToState);
+        return (int) (transition & GET_TO_STATE);
     }
 
     public static boolean isIdentityTransition(long transition, int idIdx) {

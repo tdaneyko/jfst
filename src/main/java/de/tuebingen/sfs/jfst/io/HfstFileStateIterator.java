@@ -1,19 +1,17 @@
 package de.tuebingen.sfs.jfst.io;
 
-import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.alphabet.Symbol;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
 import de.tuebingen.sfs.util.bin.BufferedByteReader;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-public class HFSTFileStateIterator implements FSTFileStateIterator {
+public class HfstFileStateIterator implements FileStateIterator {
 
     private static final boolean VERBOSE = true;
 
@@ -30,7 +28,6 @@ public class HFSTFileStateIterator implements FSTFileStateIterator {
     private int maxId;
 
     private Alphabet alphabet;
-    private int identId;
 
     private BufferedByteReader in;
     private boolean inverse;
@@ -44,11 +41,11 @@ public class HFSTFileStateIterator implements FSTFileStateIterator {
     private int inSym;
     private int outSym;
 
-    public HFSTFileStateIterator(String fileName) {
+    public HfstFileStateIterator(String fileName) {
         this(fileName, false);
     }
 
-    public HFSTFileStateIterator(String fileName, boolean inverse) {
+    public HfstFileStateIterator(String fileName, boolean inverse) {
         props = new HashMap<>();
         decoder = StandardCharsets.UTF_8.newDecoder();
         this.inverse = inverse;
@@ -97,8 +94,8 @@ public class HFSTFileStateIterator implements FSTFileStateIterator {
             skip += 4 + headerLength;
 
             int unknown1 = popHfstInt(in);
-            if (unknown1 != HFSTFileStateIterator.UNKNOWN_1)
-                System.err.println("Wrong unknown constant 1: " + unknown1 + " instead of " + HFSTFileStateIterator.UNKNOWN_1);
+            if (unknown1 != HfstFileStateIterator.UNKNOWN_1)
+                System.err.println("Wrong unknown constant 1: " + unknown1 + " instead of " + HfstFileStateIterator.UNKNOWN_1);
             int vectorLength = popHfstInt(in);
             in.skip(vectorLength);
             int standardLength = popHfstInt(in);
@@ -117,8 +114,8 @@ public class HFSTFileStateIterator implements FSTFileStateIterator {
             skip += 16;
 
             int unknown2 = popHfstInt(in);
-            if (unknown2 != HFSTFileStateIterator.UNKNOWN_2)
-                System.err.println("Wrong unknown constant 2: " + unknown2 + " instead of " + HFSTFileStateIterator.UNKNOWN_2);
+            if (unknown2 != HfstFileStateIterator.UNKNOWN_2)
+                System.err.println("Wrong unknown constant 2: " + unknown2 + " instead of " + HfstFileStateIterator.UNKNOWN_2);
             in.skip(4);
             skip += 8;
 
@@ -149,11 +146,10 @@ public class HFSTFileStateIterator implements FSTFileStateIterator {
 //            System.err.println(symbol + " " + id);
 
             if (symbol.equals("@_IDENTITY_SYMBOL_@")) {
-                symbol = Symbol.IDENTITY_STRING;
-                identId = id;
+                symbol = Alphabet.IDENTITY_STRING;
             }
             else if (symbol.equals("@_EPSILON_SYMBOL_@")) {
-                symbol = Symbol.EPSILON_STRING;
+                symbol = Alphabet.EPSILON_STRING;
             }
 
             symbols[id] = symbol;
@@ -181,11 +177,6 @@ public class HFSTFileStateIterator implements FSTFileStateIterator {
     @Override
     public Alphabet getAlphabet() {
         return alphabet;
-    }
-
-    @Override
-    public int getIdentityId() {
-        return identId;
     }
 
     @Override
@@ -248,11 +239,6 @@ public class HFSTFileStateIterator implements FSTFileStateIterator {
                 e.printStackTrace();
             }
         }
-    }
-
-    @Override
-    public boolean identity() {
-        return inSym == identId && outSym == identId;
     }
 
     @Override

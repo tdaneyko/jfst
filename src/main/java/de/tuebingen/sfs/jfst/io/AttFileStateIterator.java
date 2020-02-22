@@ -1,7 +1,7 @@
 package de.tuebingen.sfs.jfst.io;
 
-import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.fst.CompactTransition;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
+import de.tuebingen.sfs.jfst.transduce.compact.CompactTransition;
 import de.tuebingen.sfs.util.string.StringUtils;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -16,10 +16,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ATTFileStateIterator implements FSTFileStateIterator {
+public class AttFileStateIterator implements FileStateIterator {
 
     private Alphabet alphabet;
-    private int idIdx;
     private int nState;
     private int nTrans;
     private int start;
@@ -30,10 +29,9 @@ public class ATTFileStateIterator implements FSTFileStateIterator {
     private int s = -1;
     private int t = -1;
 
-    public ATTFileStateIterator(InputStream in, FSTProducer producer, boolean inverse) {
+    public AttFileStateIterator(InputStream in, FstProducer producer, boolean inverse) {
         alphabet = new Alphabet();
         nTrans = 0;
-        idIdx = alphabet.getSymbol(producer.convert(producer.identity())).getId();
         start = 0;
         try (BufferedReader read = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             // State-to-transitions mapping
@@ -97,11 +95,6 @@ public class ATTFileStateIterator implements FSTFileStateIterator {
     }
 
     @Override
-    public int getIdentityId() {
-        return idIdx;
-    }
-
-    @Override
     public boolean hasNextState() {
         return s + 1 < transitions.size();
     }
@@ -126,11 +119,6 @@ public class ATTFileStateIterator implements FSTFileStateIterator {
     @Override
     public void nextTransition() {
         t++;
-    }
-
-    @Override
-    public boolean identity() {
-        return currentTransitions.get(t).identity(idIdx);
     }
 
     @Override

@@ -1,8 +1,8 @@
 package de.tuebingen.sfs.jfst.io;
 
-import de.tuebingen.sfs.jfst.fst.FSTStateIterator;
+import de.tuebingen.sfs.jfst.transduce.StateIterator;
 
-public interface FSTFileStateIterator extends FSTStateIterator {
+public interface FileStateIterator extends StateIterator {
 
     void close();
 

@@ -1,24 +1,24 @@
-package de.tuebingen.sfs.jfst.fst;
+package de.tuebingen.sfs.jfst.transduce;
 
-import de.tuebingen.sfs.jfst.alphabet.Alphabet;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
 
 /**
- * An iterator over the states and transitions of an FST.
+ * An iterator over the states and transitions of an Transducer.
  */
-public interface FSTStateIterator {
+public interface StateIterator {
 
     /**
-     * @return The total number of states in the underlying FST
+     * @return The total number of states in the underlying Transducer
      */
     int nOfStates();
 
     /**
-     * @return The total number of transitions in the underlying FST
+     * @return The total number of transitions in the underlying Transducer
      */
     int nOfTransitions();
 
     /**
-     * @return The alphabet of the FST
+     * @return The alphabet of the Transducer
      */
     Alphabet getAlphabet();
 

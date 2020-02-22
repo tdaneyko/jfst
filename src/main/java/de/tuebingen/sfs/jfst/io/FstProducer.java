@@ -1,11 +1,11 @@
 package de.tuebingen.sfs.jfst.io;
 
-import de.tuebingen.sfs.jfst.alphabet.Symbol;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
 
 /**
  * The original producer of a file. Currently supports SFST, HFST and JFST.
  */
-public enum FSTProducer {
+public enum FstProducer {
 
     /**
      * Marks files produced by the Helsinki Finite-State Toolkit.
@@ -48,17 +48,17 @@ public enum FSTProducer {
     },
 
     /**
-     * Marks files produced by this FST library.
+     * Marks files produced by this Transducer library.
      */
     JFST {
         @Override
         public String epsilon() {
-            return Symbol.EPSILON_STRING;
+            return Alphabet.EPSILON_STRING;
         }
 
         @Override
         public String identity() {
-            return Symbol.IDENTITY_STRING;
+            return Alphabet.IDENTITY_STRING;
         }
 
         @Override
@@ -93,7 +93,9 @@ public enum FSTProducer {
      */
     public String convert(String s) {
         if (s.equals(epsilon()))
-            return Symbol.EPSILON_STRING;
+            return Alphabet.EPSILON_STRING;
+        else if (s.equals(identity()))
+            return Alphabet.IDENTITY_STRING;
         else if (s.equals(space()))
             return " ";
         return s;

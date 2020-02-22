@@ -1,8 +1,6 @@
-package de.tuebingen.sfs.jfst.fst;
+package de.tuebingen.sfs.jfst.transduce;
 
-import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.io.ATTWriter;
-import de.tuebingen.sfs.jfst.io.BinaryFSTWriter;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,17 +10,17 @@ import java.util.Set;
 /**
  * A finite-state transducer.
  */
-public interface FST {
+public interface Transducer {
 
     /**
-     * Write the FST to a file in JFST binary format.
+     * Write the Transducer to a file in JFST binary format.
      * @param out The output file
      * @throws IOException
      */
     void writeToBinary(OutputStream out) throws IOException;
 
     /**
-     * Write the FST to a file in AT&T format.
+     * Write the Transducer to a file in AT&T format.
      * @param attFile The output file
      * @throws IOException
      */
@@ -46,7 +44,7 @@ public interface FST {
     /**
      * @return An iterator over the states of this transducer
      */
-    FSTStateIterator iter();
+    StateIterator iter();
 
     /**
      * Apply this transducer to an input string.

@@ -1,8 +1,8 @@
 package de.tuebingen.sfs.jfst.io;
 
-import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.fst.FST;
-import de.tuebingen.sfs.jfst.fst.FSTStateIterator;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
+import de.tuebingen.sfs.jfst.transduce.Transducer;
+import de.tuebingen.sfs.jfst.transduce.StateIterator;
 import de.tuebingen.sfs.util.bin.IOUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -13,7 +13,7 @@ import java.io.OutputStream;
 /**
  * A class for writing a JFST object to a binary file.
  */
-public class BinaryFSTWriter {
+public class JfstBinaryWriter {
 
     /**
      * Control byte that marks the end of literal transitions of an accepting state
@@ -29,23 +29,23 @@ public class BinaryFSTWriter {
     public static final byte STATEEND = (byte) 0b11111111;
 
     /**
-     * Write an FST to a binary file.
+     * Write an Transducer to a binary file.
      * @param out Output file
-     * @param fst The FST
+     * @param fst The Transducer
      * @throws IOException
      */
-    public static void writeFST(OutputStream out, FST fst) throws IOException {
+    public static void writeFST(OutputStream out, Transducer fst) throws IOException {
         writeFST(out, fst.iter(), fst.getAlphabet());
     }
 
     /**
-     * Write an FST to a binary file.
+     * Write an Transducer to a binary file.
      * @param out Output file
-     * @param states Ierator over states and transitions of an FST
-     * @param alphabet Symbols used by that FST
+     * @param states Ierator over states and transitions of an Transducer
+     * @param alphabet Symbols used by that Transducer
      * @throws IOException
      */
-    public static void writeFST(OutputStream out, FSTStateIterator states, Alphabet alphabet) throws IOException {
+    public static void writeFST(OutputStream out, StateIterator states, Alphabet alphabet) throws IOException {
         int startID = states.getStartState();
         int nStates = states.nOfStates();
         int nTrans = states.nOfTransitions();

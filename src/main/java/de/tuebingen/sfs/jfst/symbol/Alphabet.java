@@ -1,4 +1,4 @@
-package de.tuebingen.sfs.jfst.transduce;
+package de.tuebingen.sfs.jfst.symbol;
 
 import java.util.*;
 

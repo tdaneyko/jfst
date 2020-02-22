@@ -1,7 +1,6 @@
 package de.tuebingen.sfs.jfst.io;
 
-import de.tuebingen.sfs.jfst.alphabet.Alphabet;
-import de.tuebingen.sfs.jfst.alphabet.Symbol;
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
 import de.tuebingen.sfs.util.bin.BufferedByteReader;
 import de.tuebingen.sfs.util.bin.IOUtils;
 import gnu.trove.list.TIntList;
@@ -10,12 +9,12 @@ import gnu.trove.list.array.TIntArrayList;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class JFSTFileStateIterator implements FSTFileStateIterator {
+public class JfstFileStateIterator implements FileStateIterator {
 
     // Control bytes
-    private static final byte ACC_BYTE = BinaryFSTWriter.ACCEPTING;
-    private static final byte N_ACC_BYTE = BinaryFSTWriter.NONACCEPTING;
-    private static final byte END_BYTE = BinaryFSTWriter.STATEEND;
+    private static final byte ACC_BYTE = JfstBinaryWriter.ACCEPTING;
+    private static final byte N_ACC_BYTE = JfstBinaryWriter.NONACCEPTING;
+    private static final byte END_BYTE = JfstBinaryWriter.STATEEND;
 
     private BufferedByteReader in;
     private boolean inverse;
@@ -24,7 +23,6 @@ public class JFSTFileStateIterator implements FSTFileStateIterator {
     private int nStates;
     private int startID;
     private int nTrans;
-    private int idIdx;
 
     private int sBytes;
     private int aBytes;
@@ -38,11 +36,11 @@ public class JFSTFileStateIterator implements FSTFileStateIterator {
     private TIntList outSyms;
     private TIntList toStates;
 
-    public JFSTFileStateIterator(String fileName) {
+    public JfstFileStateIterator(String fileName) {
         this(fileName, false);
     }
 
-    public JFSTFileStateIterator(String fileName, boolean inverse) {
+    public JfstFileStateIterator(String fileName, boolean inverse) {
         this.inverse = inverse;
 
         try {
@@ -57,10 +55,6 @@ public class JFSTFileStateIterator implements FSTFileStateIterator {
                 alphabet.addSymbol(sym);
             }
             in.skip(2);
-
-            // Add identity symbol
-            idIdx = alphabet.size();
-            alphabet.addSymbol(Symbol.IDENTITY_STRING);
 
             // Get number of states and transitions
             nStates = in.popToInt();
@@ -98,11 +92,6 @@ public class JFSTFileStateIterator implements FSTFileStateIterator {
     }
 
     @Override
-    public int getIdentityId() {
-        return idIdx;
-    }
-
-    @Override
     public boolean hasNextState() {
         return s+1 < nStates;
     }
@@ -118,62 +107,37 @@ public class JFSTFileStateIterator implements FSTFileStateIterator {
         try {
             boolean stateEnd = false;
             while (!stateEnd && !eof) {
-                // In literal transition area
-                if (litTrans) {
-                    // End of literal transitions
-                    boolean swAcc = in.startsWith(ACC_BYTE);
-                    if (swAcc || in.startsWith(N_ACC_BYTE)) {
-                        acc = swAcc;
-                        litTrans = false;
-                        in.skip(1);
-                    }
-                    // Add literal transition
-                    else if (in.hasNext(litSize)) {
-                        int toId = in.popToInt(sBytes);
-                        int inSym = in.popToInt(aBytes);
-                        int outSym = in.popToInt(aBytes);
-                        if (inverse) {
-                            inSyms.add(outSym);
-                            outSyms.add(inSym);
-                        }
-                        else {
-                            inSyms.add(inSym);
-                            outSyms.add(outSym);
-                        }
-                        toStates.add(toId);
-                    }
-                    // If there are non enough bytes for a literal transition and the end of literals is not marked,
-                    // the end of a valid binary file is reached.
-                    else
+                // Reached end of state
+                boolean swAcc = in.startsWith(ACC_BYTE);
+                if (swAcc || in.startsWith(N_ACC_BYTE)) {
+                    acc = swAcc;
+                    // If this was the last state => end of file
+                    if (!hasNextState())
                         eof = true;
-                }
-                // In identity transition area
-                else {
-                    // Reached end of state
-                    if (in.startsWith(END_BYTE)) {
-                        // Back to literal transition area
-                        litTrans = true;
-                        // If this was the last state => end of file
-                        if (!hasNextState())
-                            eof = true;
-                        // Else process next state
-                        else {
-                            stateEnd = true;
-                        }
-                        in.skip(1);
-                    }
-                    // Add identity transition
-                    else if (in.hasNext(sBytes)) {
-                        int toId = in.popToInt(sBytes);
-                        inSyms.add(idIdx);
-                        outSyms.add(idIdx);
-                        toStates.add(toId);
-                    }
-                    // If there are not enough bytes for an identity transition and the end of identities is not marked,
-                    // the end of a valid binary file is reached.
+                    // Else process next state
                     else
-                        eof = true;
+                        stateEnd = true;
+                    in.skip(1);
                 }
+                // Add literal transition
+                else if (in.hasNext(litSize)) {
+                    int toId = in.popToInt(sBytes);
+                    int inSym = in.popToInt(aBytes);
+                    int outSym = in.popToInt(aBytes);
+                    if (inverse) {
+                        inSyms.add(outSym);
+                        outSyms.add(inSym);
+                    }
+                    else {
+                        inSyms.add(inSym);
+                        outSyms.add(outSym);
+                    }
+                    toStates.add(toId);
+                }
+                // If there are non enough bytes for a literal transition and the end of literals is not marked,
+                // the end of a valid binary file is reached.
+                else
+                    eof = true;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -195,11 +159,6 @@ public class JFSTFileStateIterator implements FSTFileStateIterator {
     public void nextTransition() {
         if (hasNextTransition())
             t++;
-    }
-
-    @Override
-    public boolean identity() {
-        return inSyms.get(t) == idIdx && outSyms.get(t) == idIdx;
     }
 
     @Override
