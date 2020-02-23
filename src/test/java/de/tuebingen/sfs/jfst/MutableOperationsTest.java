@@ -15,7 +15,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testRemoveEpsilons() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testDeterminize.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
 
         assertEquals(10, fst.nOfStates());
         assertEquals(14, fst.nOfTransitions());
@@ -36,7 +36,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testDeterminize() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testDeterminize.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
 
         assertEquals(10, fst.nOfStates());
         assertEquals(14, fst.nOfTransitions());
@@ -52,6 +52,40 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
         assertEquals(Collections.emptySet(), fst.apply("bg"));
+    }
+
+    public void testConcatSameAlph() throws IOException {
+        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+        MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST, true);
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+
+        fst1.concat(fst2);
+
+        assertEquals(Collections.singleton("BDGbdg"), fst1.apply("bdgBDG"));
+        assertEquals(Collections.singleton("XXXEFGbdg"), fst1.apply("xxxefgBDG"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+    }
+
+    public void testConcatDiffAlph() throws IOException {
+        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+        MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST, true);
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+
+        fst1.concat(fst2);
+
+        assertEquals(Collections.singleton("BDGбdг"), fst1.apply("bdgБDГ"));
+        assertEquals(Collections.singleton("XXXEFGбdг"), fst1.apply("xxxefgБDГ"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
     }
 
 }

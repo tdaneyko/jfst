@@ -8,6 +8,7 @@ import de.tuebingen.sfs.jfst.transduce.Transducer;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A mutable Transducer to which new states and transitions may be added.
@@ -47,14 +48,25 @@ public class MutableCompactTransducer extends MutableTransducer {
         // Initialize state and transition lists
         this.transitions = new ArrayList<>();
         this.accepting = new ArrayList<>();
+
         // Store states and transitions
+        appendStatesAndTransitions(iter, 0, null);
+    }
+
+    private void appendStatesAndTransitions(StateIterator iter, int stateOffset, int[] alphTransformations) {
         while (iter.hasNextState()) {
             iter.nextState();
             List<CompactTransition> stateTrans = new ArrayList<>();
             accepting.add(iter.accepting());
             while (iter.hasNextTransition()) {
                 iter.nextTransition();
-                stateTrans.add(new CompactTransition(iter.inId(), iter.outId(), iter.toId()));
+                int inId = iter.inId();
+                int outId = iter.outId();
+                if (alphTransformations != null) {
+                    inId = alphTransformations[inId];
+                    outId = alphTransformations[outId];
+                }
+                stateTrans.add(new CompactTransition(inId, outId, iter.toId() + stateOffset));
             }
             // Sort transitions for current state
             Collections.sort(stateTrans);
@@ -340,9 +352,42 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     }
 
+    private int[] mergeAlphabets(Alphabet other) {
+        if (Arrays.equals(alphabet.getSymbols(), other.getSymbols()))
+            return null;
+
+        int[] otherIdsToNew = new int[other.size()];
+        for (int a = 0; a < other.size(); a++) {
+            int id = alphabet.getIdOrCreate(other.getSymbol(a));
+            otherIdsToNew[a] = id;
+        }
+        return otherIdsToNew;
+    }
+
     @Override
     public void concat(Transducer other) {
+        int startOfAppended = nOfStates();
+        int[] alphTransformations = mergeAlphabets(other.getAlphabet());
 
+        if (alphTransformations == null && other instanceof MutableCompactTransducer) {
+            MutableCompactTransducer otherMut = (MutableCompactTransducer) other;
+            final int offset = startOfAppended;
+            this.transitions.addAll(otherMut.transitions.stream().map(tList ->
+                    tList.stream()
+                            .map(t -> new CompactTransition(t.getInternalRepresentation() + offset))
+                            .collect(Collectors.toList()))
+                    .collect(Collectors.toList()));
+            this.accepting.addAll(otherMut.accepting);
+            startOfAppended = otherMut.start;
+        }
+        else {
+            appendStatesAndTransitions(other.iter(), nOfStates(), alphTransformations);
+        }
+
+        for (int s = 0; s < startOfAppended; s++) {
+            if (accepting.get(s))
+                addTransition(s, Alphabet.EPSILON_STRING, Alphabet.EPSILON_STRING, startOfAppended);
+        }
     }
 
     @Override
