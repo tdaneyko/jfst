@@ -62,10 +62,37 @@ public class MutableCompactTransducer extends MutableTransducer {
         }
     }
 
+    private int addState() {
+        return addState(false);
+    }
+
     private int addState(boolean accepting) {
         this.transitions.add(new ArrayList<>());
         this.accepting.add(accepting);
         return s++;
+    }
+
+    private void setAccepting(int stateId, boolean accepting) {
+        this.accepting.set(stateId, accepting);
+    }
+
+    private void addTransition(int from, String inSym, String outSym, int to) {
+        addTransition(from, new CompactTransition(
+                alphabet.getIdOrCreate(inSym), alphabet.getIdOrCreate(outSym), to));
+    }
+
+    private void addTransition(int from, CompactTransition transition) {
+        List<CompactTransition> trans = transitions.get(from);
+        int i = Collections.binarySearch(trans, transition);
+        if (i < 0) {
+            i = -(i + 1);
+            trans.add(i, transition);
+        }
+    }
+
+    private void addTransitions(int from, Iterable<CompactTransition> transitions) {
+        for (CompactTransition trans : transitions)
+            addTransition(from, trans);
     }
 
     /**
@@ -186,12 +213,101 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public StateIterator iter() {
-        return new CompactFSTStateIterator(this);
+        return new MutableCompactTransducerStateIterator(this);
+    }
+
+    public void removeEpsilons() {
+        Set<Integer> done = new HashSet<>();
+        for (int state = 0; state < transitions.size(); state++) {
+            if (!done.contains(state)) {
+                done.add(state);
+                done.addAll(removeEpsilons(state));
+            }
+        }
+    }
+
+    private Set<Integer> removeEpsilons(int state) {
+        Set<Integer> reachables = new HashSet<>();
+        List<CompactTransition> stateTrans = transitions.get(state);
+        int i = Collections.binarySearch(stateTrans, ((long) alphabet.epsilonId()) << 48);
+        if (i < 0)
+            i = -(i + 1);
+        while (i < stateTrans.size()) {
+            CompactTransition trans = stateTrans.get(i);
+            if (trans.getInSym() == alphabet.epsilonId()) {
+                if (trans.getOutSym() == alphabet.epsilonId()) {
+                    reachables.add(trans.getToState());
+                    reachables.addAll(removeEpsilons(trans.getToState()));
+                    stateTrans.remove(i);
+                }
+                else
+                    i++;
+            }
+            else
+                break;
+        }
+
+        for (int reachable : reachables) {
+            if (isAccepting(reachable))
+                setAccepting(state, true);
+            addTransitions(state, transitions.get(reachable));
+        }
+
+        return reachables;
     }
 
     @Override
     public void determinize() {
+        removeEpsilons();
 
+        List<List<CompactTransition>> oldTrans = transitions;
+        List<Boolean> oldAcc = accepting;
+
+        Map<Set<Integer>, Integer> stateSets = new HashMap<>();
+        Set<Integer> startSet = new HashSet<>();
+        startSet.add(start);
+        Set<Integer> immStartSet = Collections.unmodifiableSet(startSet);
+
+        this.s = 0;
+        this.transitions = new ArrayList<>();
+        this.accepting = new ArrayList<>();
+        this.start = addState();
+        stateSets.put(immStartSet, start);
+
+        LinkedHashSet<Set<Integer>> queue = new LinkedHashSet<>();
+        queue.add(immStartSet);
+        while (!queue.isEmpty()) {
+            Set<Integer> currentStateSet = queue.iterator().next();
+            queue.remove(currentStateSet);
+            int currentStateId = stateSets.get(currentStateSet);
+
+            // Collect outgoing transitions of state set members
+            Map<Long, Set<Integer>> setTrans = new TreeMap<>();
+            boolean acc = false;
+            for (Integer from : currentStateSet) {
+                acc = acc || oldAcc.get(from); // If any state in set is accepting, the whole set is accepting
+                for (CompactTransition trans : oldTrans.get(from)) {
+                    int to = trans.getToState();
+                    long syms = trans.getInternalRepresentation() & (~CompactTransition.GET_TO_STATE);
+                    Set<Integer> toStates = setTrans.computeIfAbsent(syms, x -> new HashSet<>());
+                    toStates.add(to);
+                }
+            }
+            setAccepting(currentStateId, acc);
+
+            // Set new transitions and create new states
+            for (Map.Entry<Long, Set<Integer>> entry : setTrans.entrySet()) {
+                int i = stateSets.getOrDefault(entry.getValue(), -1);
+                if (i == -1) {
+                    i = addState();
+                    Set<Integer> newStateSet = Collections.unmodifiableSet(entry.getValue());
+                    stateSets.put(newStateSet, i);
+                    queue.add(newStateSet);
+                }
+                CompactTransition trans = new CompactTransition(entry.getKey() | ((long) i));
+                addTransition(currentStateId, trans);
+            }
+        }
     }
 
     @Override
@@ -308,7 +424,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         }
     }
 
-    private static class CompactFSTStateIterator implements StateIterator {
+    private static class MutableCompactTransducerStateIterator implements StateIterator {
 
         final MutableCompactTransducer fst;
         final Alphabet alphabet;
@@ -318,7 +434,7 @@ public class MutableCompactTransducer extends MutableTransducer {
 
         List<CompactTransition> stateTrans;
 
-        public CompactFSTStateIterator(MutableCompactTransducer fst) {
+        public MutableCompactTransducerStateIterator(MutableCompactTransducer fst) {
             this.fst = fst;
             this.alphabet = new Alphabet(fst.alphabet.getSymbols());
 

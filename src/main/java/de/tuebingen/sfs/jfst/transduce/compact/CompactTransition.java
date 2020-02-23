@@ -15,6 +15,10 @@ public class CompactTransition implements Comparable<Object> {
         this.transition = makeTransition(inSym, outSym, toId);
     }
 
+    public CompactTransition(long transition) {
+        this.transition = transition;
+    }
+
     public int getInSym() {
         return inIdFromTransition(transition);
     }
@@ -37,6 +41,10 @@ public class CompactTransition implements Comparable<Object> {
 
     public void setToState(int toState) {
         transition = (transition & ~(GET_TO_STATE)) | ((long) toState);
+    }
+
+    public boolean epsilon(int epsIdx) {
+        return isEpsilonTransition(transition, epsIdx);
     }
 
     public boolean identity(int idIdx) {
@@ -86,5 +94,9 @@ public class CompactTransition implements Comparable<Object> {
 
     public static boolean isIdentityTransition(long transition, int idIdx) {
         return inIdFromTransition(transition) == idIdx;
+    }
+
+    public static boolean isEpsilonTransition(long transition, int epsIdx) {
+        return inIdFromTransition(transition) == epsIdx && outIdFromTransition(transition) == epsIdx;
     }
 }

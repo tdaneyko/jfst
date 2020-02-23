@@ -155,8 +155,8 @@ public class CompactTransducer extends ApplicableTransducer {
     }
 
     @Override
-    public CompactFSTStateIterator iter() {
-        return new CompactFSTStateIterator(this);
+    public CompactTransducerStateIterator iter() {
+        return new CompactTransducerStateIterator(this);
     }
 
     @Override
@@ -233,7 +233,7 @@ public class CompactTransducer extends ApplicableTransducer {
     }
 
 
-    private static class CompactFSTStateIterator implements StateIterator {
+    private static class CompactTransducerStateIterator implements StateIterator {
 
         final CompactTransducer fst;
         final Alphabet alphabet;
@@ -242,7 +242,7 @@ public class CompactTransducer extends ApplicableTransducer {
         int t;
         int tend;
 
-        public CompactFSTStateIterator(CompactTransducer fst) {
+        public CompactTransducerStateIterator(CompactTransducer fst) {
             this.fst = fst;
             this.alphabet = new Alphabet(fst.alphabet.getSymbols());
 
