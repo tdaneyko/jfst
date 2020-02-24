@@ -54,6 +54,48 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst.apply("bg"));
     }
 
+    public void testRemoveUnreachableStates() throws IOException {
+        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+
+        int s = fst.addState();
+        fst.addTransition(s, "b", "B", 0);
+
+        assertEquals(11, fst.nOfStates());
+        assertEquals(15, fst.nOfTransitions());
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+
+        fst.removeUnreachableStates();
+
+        assertEquals(10, fst.nOfStates());
+        assertEquals(14, fst.nOfTransitions());
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+    }
+
+    public void testMinimize() throws IOException {
+        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+
+        assertEquals(10, fst.nOfStates());
+        assertEquals(14, fst.nOfTransitions());
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+
+        fst.minimize();
+        fst.writeToATT(new File(TEST_DIR + "testMinimizeOut.att"));
+
+        assertEquals(8, fst.nOfStates());
+//        assertEquals(13, fst.nOfTransitions());
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+    }
+
     public void testRepeat() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
                 new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);

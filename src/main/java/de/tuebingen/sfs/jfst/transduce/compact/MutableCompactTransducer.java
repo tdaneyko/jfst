@@ -32,11 +32,25 @@ public class MutableCompactTransducer extends MutableTransducer {
     // Id of next state
     private int s = 0;
 
+    private boolean deterministic;
+    private boolean noUnreachableStates;
+
+    private void reset() {
+        this.start = -1;
+        this.transitions = new ArrayList<>();
+        this.accepting = new ArrayList<>();
+        this.s = 0;
+        this.deterministic = true;
+        this.noUnreachableStates = true;
+    }
+
     public MutableCompactTransducer() {
         this.alphabet = new Alphabet();
         this.transitions = new ArrayList<>();
         this.accepting = new ArrayList<>();
         this.start = addState(false);
+        this.deterministic = true;
+        this.noUnreachableStates = true;
     }
 
     public MutableCompactTransducer(StateIterator iter) {
@@ -51,6 +65,9 @@ public class MutableCompactTransducer extends MutableTransducer {
 
         // Store states and transitions
         appendStatesAndTransitions(iter, 0, null);
+
+        this.deterministic = false;
+        this.noUnreachableStates = false;
     }
 
     private void appendStatesAndTransitions(StateIterator iter, int stateOffset, int[] alphTransformations) {
@@ -71,6 +88,7 @@ public class MutableCompactTransducer extends MutableTransducer {
             // Sort transitions for current state
             Collections.sort(stateTrans);
             transitions.add(stateTrans);
+            s++;
         }
     }
 
@@ -78,6 +96,7 @@ public class MutableCompactTransducer extends MutableTransducer {
     public int addState(boolean accepting) {
         this.transitions.add(new ArrayList<>());
         this.accepting.add(accepting);
+        this.noUnreachableStates = false;
         return s++;
     }
 
@@ -99,6 +118,7 @@ public class MutableCompactTransducer extends MutableTransducer {
             i = -(i + 1);
             trans.add(i, transition);
         }
+        deterministic = false;
     }
 
     private void addTransitions(int from, Iterable<CompactTransition> transitions) {
@@ -220,6 +240,14 @@ public class MutableCompactTransducer extends MutableTransducer {
         return alphabet;
     }
 
+    public boolean isDeterministic() {
+        return deterministic;
+    }
+
+    public boolean hasNoUnreachableStates() {
+        return noUnreachableStates;
+    }
+
     @Override
     public StateIterator iter() {
         return new MutableCompactTransducerStateIterator(this);
@@ -277,9 +305,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         startSet.add(start);
         Set<Integer> immStartSet = Collections.unmodifiableSet(startSet);
 
-        this.s = 0;
-        this.transitions = new ArrayList<>();
-        this.accepting = new ArrayList<>();
+        reset();
         this.start = addState();
         stateSets.put(immStartSet, start);
 
@@ -317,11 +343,143 @@ public class MutableCompactTransducer extends MutableTransducer {
                 addTransition(currentStateId, trans);
             }
         }
+
+        this.deterministic = true;
+        this.noUnreachableStates = true;
+    }
+
+    public void removeUnreachableStates() {
+        Set<Integer> reachables = transitions.stream()
+                .map(tList -> tList.stream().map(CompactTransition::getToState))
+                .flatMap(toStream -> toStream)
+                .collect(Collectors.toSet());
+
+        if (reachables.size() < nOfStates()) {
+            int[] stateTransformations = new int[nOfStates()];
+            int currentOffset = 0;
+            for (int s = 0; s < nOfStates(); s++) {
+                if (reachables.contains(s))
+                    stateTransformations[s] = s - currentOffset;
+                else {
+                    transitions.remove(s - currentOffset);
+                    accepting.remove(s - currentOffset);
+                    currentOffset++;
+                }
+            }
+            this.s = reachables.size();
+
+            for (List<CompactTransition> stateTrans : transitions) {
+                for (CompactTransition trans : stateTrans) {
+                    trans.setToState(stateTransformations[trans.getToState()]);
+                }
+            }
+        }
+
+        noUnreachableStates = true;
     }
 
     @Override
     public void minimize() {
-        // TODO: Implement
+        if (!deterministic)
+            this.determinize();
+        else if (!noUnreachableStates)
+            this.removeUnreachableStates();
+
+        Set<Integer> finalStates = new HashSet<>();
+        Set<Integer> nonFinalStates = new HashSet<>();
+        for (int s = 0; s < nOfStates(); s++)
+            ((accepting.get(s)) ? finalStates : nonFinalStates).add(s);
+
+//        P := {F, Q \ F};
+//        W := {F, Q \ F};
+        Set<Set<Integer>> equivSets = new HashSet<>();
+        equivSets.add(finalStates);
+        equivSets.add(nonFinalStates);
+        Set<Set<Integer>> candidateSets = new LinkedHashSet<>();
+        candidateSets.add(finalStates);
+        candidateSets.add(nonFinalStates);
+
+//        while (W is not empty) do
+        while (!candidateSets.isEmpty()) {
+//             choose and remove a set A from W
+            Set<Integer> a = candidateSets.iterator().next();
+            candidateSets.remove(a);
+//             for each c in Σ do
+            for (int inSym = 0; inSym < alphabet.size(); inSym++) {
+                for (int outSym = 0; outSym < alphabet.size(); outSym++) {
+//                  let X be the set of states for which a transition on c leads to a state in A
+                    Set<Integer> fromStates = getFromStates(inSym, outSym, a);
+//                  for each set Y in P for which X ∩ Y is nonempty and Y \ X is nonempty do
+                    Set<Set<Integer>> newEquivSets = new HashSet<>(equivSets);
+                    for (Set<Integer> equivStates : equivSets) {
+                        Set<Integer> intersection = new HashSet<>();
+                        Set<Integer> difference = new HashSet<>(equivStates);
+                        for (int from : fromStates) {
+                            if (difference.remove(from))
+                                intersection.add(from);
+                        }
+                        if (!intersection.isEmpty() && !difference.isEmpty()) {
+//                       replace Y in P by the two sets X ∩ Y and Y \ X
+                            newEquivSets.remove(equivStates);
+                            newEquivSets.add(intersection);
+                            newEquivSets.add(difference);
+//                       if Y is in W
+                            if (candidateSets.remove(equivStates)) {
+//                            replace Y in W by the same two sets
+                                candidateSets.add(intersection);
+                                candidateSets.add(difference);
+                            }
+//                       else
+//                            if |X ∩ Y| <= |Y \ X|
+                            else if (intersection.size() <= difference.size())
+//                                 add X ∩ Y to W
+                                candidateSets.add(intersection);
+//                            else
+                            else
+//                                 add Y \ X to W
+                                candidateSets.add(difference);
+//                  end;
+                        }
+                    }
+                    equivSets = newEquivSets;
+//             end;
+                }
+            }
+//        end;
+        }
+
+        int[] stateTransformations = new int[nOfStates()];
+        int oldStart = start;
+        List<List<CompactTransition>> oldTrans = transitions;
+        List<Boolean> oldAcc = accepting;
+        reset();
+        start = stateTransformations[oldStart];
+        for (Set<Integer> equivStates : equivSets) {
+            int newState = addState();
+            for (int oldState : equivStates) {
+                System.err.println(oldState + " -> " + newState);
+                stateTransformations[oldState] = newState;
+                setAccepting(newState, oldAcc.get(oldState));
+                for (CompactTransition trans : oldTrans.get(oldState)) {
+                    trans.setToState(stateTransformations[trans.getToState()]);
+                    addTransition(newState, trans);
+                }
+            }
+        }
+    }
+
+    private Set<Integer> getFromStates(int inSym, int outSym, Set<Integer> toStates) {
+        Set<Integer> fromStates = new HashSet<>();
+        Set<CompactTransition> possibleTransitions = new TreeSet<>();
+        for (int to : toStates)
+            possibleTransitions.add(new CompactTransition(inSym, outSym, to));
+
+        for (int s = 0; s < nOfStates(); s++) {
+            if (!Collections.disjoint(transitions.get(s), possibleTransitions))
+                fromStates.add(s);
+        }
+
+        return fromStates;
     }
 
     @Override
@@ -352,6 +510,8 @@ public class MutableCompactTransducer extends MutableTransducer {
 
             start = (n-1) * singleSize + start;
         }
+
+        deterministic = false;
     }
 
     @Override
@@ -370,6 +530,8 @@ public class MutableCompactTransducer extends MutableTransducer {
 
         if (n == 0)
             setAccepting(start, true);
+
+        deterministic = false;
     }
 
     @Override
@@ -408,6 +570,9 @@ public class MutableCompactTransducer extends MutableTransducer {
         }
 
         setAccepting(oldStart, true);
+
+        deterministic = false;
+        noUnreachableStates = false;
     }
 
     private int[] mergeAlphabets(Alphabet other) {
@@ -458,6 +623,9 @@ public class MutableCompactTransducer extends MutableTransducer {
                 setAccepting(s, false);
             }
         }
+
+        deterministic = false;
+        noUnreachableStates = false;
     }
 
     @Override
@@ -467,6 +635,9 @@ public class MutableCompactTransducer extends MutableTransducer {
         start = addState();
         addEpsilonTransition(start, oldStart);
         addEpsilonTransition(start, otherStart);
+
+        deterministic = false;
+        noUnreachableStates = false;
     }
 
     @Override
