@@ -107,6 +107,10 @@ public class MutableCompactTransducer extends MutableTransducer {
             addTransition(from, trans);
     }
 
+    private void addEpsilonTransition(int from, int to) {
+        addTransition(from, Alphabet.EPSILON_STRING, Alphabet.EPSILON_STRING, to);
+    }
+
     /**
      * Parse a file in AT&amp;T format into a CompactTransducer.
      * Calls MutableFSTOld.readFromATT(in, producer).makeCompact() internally.
@@ -324,32 +328,70 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void minimize() {
-
+        // TODO: Implement
     }
 
     @Override
     public void repeat(int n) {
+        if (n == 0) {
+            this.transitions = new ArrayList<>();
+            this.accepting = new ArrayList<>();
+            this.start = addState(true);
+        }
+        else if (n == 2)
+            this.concat(this);
+        else if (n > 2) {
+            int singleSize = nOfStates();
+            List<List<CompactTransition>> singleTransitions = transitions.stream()
+                    .map(Collections::unmodifiableList).collect(Collectors.toList());
+            List<Boolean> singleAccepting = Collections.nCopies(singleSize, false);
 
+            for (int i = 1; i < n; i++)
+                this.mergeMutableTransducersWithSameAlphabet(singleTransitions, singleAccepting);
+
+            for (int s = 0; s < singleSize; s++) {
+                if (accepting.get(s)) {
+                    for (int i = 1; i < n; i++) {
+                        addEpsilonTransition(i * singleSize + s, (i-1) * singleSize + start);
+                    }
+                }
+            }
+
+            start = (n-1) * singleSize + start;
+        }
     }
 
     @Override
     public void repeatMin(int n) {
+        int singleSize = nOfStates();
+        int lastStart = start;
 
+        if (n > 1)
+            this.repeat(n);
+
+        for (int s = 0; s < singleSize; s++) {
+            if (accepting.get(s)) {
+                addEpsilonTransition(s, lastStart);
+            }
+        }
+
+        if (n == 0)
+            setAccepting(start, true);
     }
 
     @Override
     public void optional() {
-
+        setAccepting(start, true);
     }
 
     @Override
     public void invert() {
-
+        // TODO: Implement
     }
 
     @Override
     public void reverse() {
-
+        // TODO: Implement
     }
 
     private int[] mergeAlphabets(Alphabet other) {
@@ -364,55 +406,71 @@ public class MutableCompactTransducer extends MutableTransducer {
         return otherIdsToNew;
     }
 
-    @Override
-    public void concat(Transducer other) {
-        int startOfAppended = nOfStates();
+    private int mergeTransducers(Transducer other) {
         int[] alphTransformations = mergeAlphabets(other.getAlphabet());
 
         if (alphTransformations == null && other instanceof MutableCompactTransducer) {
             MutableCompactTransducer otherMut = (MutableCompactTransducer) other;
-            final int offset = startOfAppended;
-            this.transitions.addAll(otherMut.transitions.stream().map(tList ->
-                    tList.stream()
-                            .map(t -> new CompactTransition(t.getInternalRepresentation() + offset))
-                            .collect(Collectors.toList()))
-                    .collect(Collectors.toList()));
-            this.accepting.addAll(otherMut.accepting);
-            startOfAppended = otherMut.start;
+            mergeMutableTransducersWithSameAlphabet(otherMut.transitions, otherMut.accepting);
+            return otherMut.start;
         }
         else {
-            appendStatesAndTransitions(other.iter(), nOfStates(), alphTransformations);
+            StateIterator iter = other.iter();
+            int offset = nOfStates();
+            appendStatesAndTransitions(iter, offset, alphTransformations);
+            return offset + iter.getStartState();
         }
+    }
 
+    private void mergeMutableTransducersWithSameAlphabet(
+            List<List<CompactTransition>> transitions, List<Boolean> accepting) {
+        final int offset = nOfStates();
+        this.transitions.addAll(transitions.stream().map(tList ->
+                tList.stream()
+                        .map(t -> new CompactTransition(t.getInternalRepresentation() + offset))
+                        .collect(Collectors.toList()))
+                .collect(Collectors.toList()));
+        this.accepting.addAll(accepting);
+    }
+
+    @Override
+    public void concat(Transducer other) {
+        int startOfAppended = mergeTransducers(other);
         for (int s = 0; s < startOfAppended; s++) {
-            if (accepting.get(s))
-                addTransition(s, Alphabet.EPSILON_STRING, Alphabet.EPSILON_STRING, startOfAppended);
+            if (accepting.get(s)) {
+                addEpsilonTransition(s, startOfAppended);
+                setAccepting(s, false);
+            }
         }
     }
 
     @Override
     public void union(Transducer other) {
-
+        int oldStart = start;
+        int otherStart = mergeTransducers(other);
+        start = addState();
+        addEpsilonTransition(start, oldStart);
+        addEpsilonTransition(start, otherStart);
     }
 
     @Override
     public void priorityUnion(Transducer other) {
-
+        // TODO: Implement
     }
 
     @Override
     public void intersect(Transducer other) {
-
-    }
-
-    @Override
-    public void compose(Transducer other) {
-
+        // TODO: Implement
     }
 
     @Override
     public void subtract(Transducer other) {
+        // TODO: Implement
+    }
 
+    @Override
+    public void compose(Transducer other) {
+        // TODO: Implement
     }
 
     private class TransitionIterator implements Iterator<Transition> {

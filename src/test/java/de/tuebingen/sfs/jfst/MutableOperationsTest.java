@@ -66,6 +66,7 @@ public class MutableOperationsTest extends TestCase {
 
         fst1.concat(fst2);
 
+        assertEquals(Collections.emptySet(), fst1.apply("bdg"));
         assertEquals(Collections.singleton("BDGbdg"), fst1.apply("bdgBDG"));
         assertEquals(Collections.singleton("XXXEFGbdg"), fst1.apply("xxxefgBDG"));
         assertEquals(Collections.emptySet(), fst1.apply("bg"));
@@ -83,9 +84,76 @@ public class MutableOperationsTest extends TestCase {
 
         fst1.concat(fst2);
 
+        assertEquals(Collections.emptySet(), fst1.apply("bdg"));
         assertEquals(Collections.singleton("BDGбdг"), fst1.apply("bdgБDГ"));
         assertEquals(Collections.singleton("XXXEFGбdг"), fst1.apply("xxxefgБDГ"));
         assertEquals(Collections.emptySet(), fst1.apply("bg"));
+    }
+
+    public void testUnion() throws IOException {
+        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+        MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST);
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+
+        fst1.union(fst2);
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.singleton("БDГ"), fst1.apply("бdг"));
+        assertEquals(Collections.emptySet(), fst1.apply("бdg"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+    }
+
+    public void testRepeat() throws IOException {
+        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+
+        fst.repeat(3);
+
+        assertEquals(Collections.emptySet(), fst.apply("bdg"));
+        assertEquals(Collections.emptySet(), fst.apply("bdgbdg"));
+        assertEquals(Collections.singleton("BDGBDGBDG"), fst.apply("bdgbdgbdg"));
+        assertEquals(Collections.emptySet(), fst.apply("bdgbdgbdgbdg"));
+    }
+
+    public void testRepeatMin() throws IOException {
+        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+
+        fst.repeatMin(3);
+
+        assertEquals(Collections.emptySet(), fst.apply(""));
+        assertEquals(Collections.emptySet(), fst.apply("bdg"));
+        assertEquals(Collections.emptySet(), fst.apply("bdgbdg"));
+        assertEquals(Collections.singleton("BDGBDGBDG"), fst.apply("bdgbdgbdg"));
+        assertEquals(Collections.singleton("BDGBDGBDGBDG"), fst.apply("bdgbdgbdgbdg"));
+    }
+
+    public void testKleeneStar() throws IOException {
+        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+
+        fst.kleeneStar();
+
+        assertEquals(Collections.singleton(""), fst.apply(""));
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("BDGBDGBDGBDG"), fst.apply("bdgbdgbdgbdg"));
     }
 
 }
