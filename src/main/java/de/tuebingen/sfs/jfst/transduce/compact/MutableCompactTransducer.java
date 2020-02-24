@@ -74,21 +74,20 @@ public class MutableCompactTransducer extends MutableTransducer {
         }
     }
 
-    private int addState() {
-        return addState(false);
-    }
-
-    private int addState(boolean accepting) {
+    @Override
+    public int addState(boolean accepting) {
         this.transitions.add(new ArrayList<>());
         this.accepting.add(accepting);
         return s++;
     }
 
-    private void setAccepting(int stateId, boolean accepting) {
+    @Override
+    public void setAccepting(int stateId, boolean accepting) {
         this.accepting.set(stateId, accepting);
     }
 
-    private void addTransition(int from, String inSym, String outSym, int to) {
+    @Override
+    public void addTransition(int from, String inSym, String outSym, int to) {
         addTransition(from, new CompactTransition(
                 alphabet.getIdOrCreate(inSym), alphabet.getIdOrCreate(outSym), to));
     }
@@ -107,13 +106,8 @@ public class MutableCompactTransducer extends MutableTransducer {
             addTransition(from, trans);
     }
 
-    private void addEpsilonTransition(int from, int to) {
-        addTransition(from, Alphabet.EPSILON_STRING, Alphabet.EPSILON_STRING, to);
-    }
-
     /**
-     * Parse a file in AT&amp;T format into a CompactTransducer.
-     * Calls MutableFSTOld.readFromATT(in, producer).makeCompact() internally.
+     * Parse a file in AT&amp;T format into a MutableCompactTransducer.
      * @param in AT&amp;T file
      * @param producer Original producer of the file
      * @return The Transducer specified by the file
@@ -123,16 +117,15 @@ public class MutableCompactTransducer extends MutableTransducer {
     }
 
     /**
-     * Parse a file in AT&amp;T format into a CompactTransducer.
-     * Calls MutableFSTOld.readFromATT(in, producer, reverse).makeCompact() internally.
+     * Parse a file in AT&amp;T format into a MutableCompactTransducer.
      * @param in AT&amp;T file
      * @param producer Original producer of the file
-     * @param reverse False: Input symbol comes before output symbol; True: Output symbol comes before input symbol
+     * @param inverse False: Input symbol comes before output symbol; True: Output symbol comes before input symbol
      * @return The Transducer specified by the file
      */
-    public static MutableCompactTransducer readFromATT(InputStream in, FstProducer producer, boolean reverse) {
-//        return MutableFSTOld.readFromATT(in, producer, reverse).makeCompact();
-        return new MutableCompactTransducer(new AttFileStateIterator(in, producer, reverse));
+    public static MutableCompactTransducer readFromATT(InputStream in, FstProducer producer, boolean inverse) {
+//        return MutableFSTOld.readFromATT(in, producer, inverse).makeCompact();
+        return new MutableCompactTransducer(new AttFileStateIterator(in, producer, inverse));
     }
 
     /**
@@ -385,13 +378,36 @@ public class MutableCompactTransducer extends MutableTransducer {
     }
 
     @Override
-    public void invert() {
-        // TODO: Implement
+    public void inverse() {
+        for (List<CompactTransition> stateTrans : transitions) {
+            for (CompactTransition trans : stateTrans)
+                trans.invert();
+        }
     }
 
     @Override
     public void reverse() {
-        // TODO: Implement
+        int oldStart = start;
+        List<List<CompactTransition>> oldTrans = transitions;
+
+        start = addState(isAccepting(oldStart));
+        transitions = new ArrayList<>();
+        for (int s = 0; s < accepting.size(); s++)
+            transitions.add(new ArrayList<>());
+
+        for (int s = 0; s < oldTrans.size(); s++) {
+            List<CompactTransition> stateTrans = oldTrans.get(s);
+            for (CompactTransition trans : stateTrans) {
+                addTransition(trans.getToState(),
+                        new CompactTransition(trans.getInSym(), trans.getOutSym(), s));
+            }
+            if (isAccepting(s)) {
+                addEpsilonTransition(start, s);
+                setAccepting(s, false);
+            }
+        }
+
+        setAccepting(oldStart, true);
     }
 
     private int[] mergeAlphabets(Alphabet other) {

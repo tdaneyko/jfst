@@ -23,7 +23,7 @@ public class CompactTransition implements Comparable<Object> {
         return inIdFromTransition(transition);
     }
 
-    public void setInSym(int inSym) {
+    void setInSym(int inSym) {
         transition = (transition & ~(GET_IN_SYM)) | (((long) inSym) << 48);
     }
 
@@ -31,15 +31,21 @@ public class CompactTransition implements Comparable<Object> {
         return outIdFromTransition(transition);
     }
 
-    public void setOutSym(int outSym) {
+    void setOutSym(int outSym) {
         transition = (transition & ~(GET_OUT_SYM)) | (((long) outSym) << 32);
+    }
+
+    void invert() {
+        int oldInSym = getInSym();
+        setInSym(getOutSym());
+        setOutSym(oldInSym);
     }
 
     public int getToState() {
         return toIdFromTransition(transition);
     }
 
-    public void setToState(int toState) {
+    void setToState(int toState) {
         transition = (transition & ~(GET_TO_STATE)) | ((long) toState);
     }
 

@@ -1,6 +1,22 @@
 package de.tuebingen.sfs.jfst.transduce;
 
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
+
 public abstract class MutableTransducer extends ApplicableTransducer {
+
+    public int addState() {
+        return addState(false);
+    }
+
+    public abstract int addState(boolean accepting);
+
+    public abstract void setAccepting(int stateId, boolean accepting);
+
+    public abstract void addTransition(int from, String inSym, String outSym, int to);
+
+    public void addEpsilonTransition(int from, int to) {
+        addTransition(from, Alphabet.EPSILON_STRING, Alphabet.EPSILON_STRING, to);
+    }
 
     public abstract void determinize();
 
@@ -20,7 +36,7 @@ public abstract class MutableTransducer extends ApplicableTransducer {
 
     public abstract void optional();
 
-    public abstract void invert();
+    public abstract void inverse();
 
     public abstract void reverse();
 
