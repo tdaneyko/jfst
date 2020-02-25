@@ -90,7 +90,7 @@ public class MutableOperationsTest extends TestCase {
         fst.writeToATT(new File(TEST_DIR + "testMinimizeOut.att"));
 
         assertEquals(8, fst.nOfStates());
-//        assertEquals(13, fst.nOfTransitions());
+        assertEquals(13, fst.nOfTransitions());
         assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
         assertEquals(Collections.emptySet(), fst.apply("bg"));

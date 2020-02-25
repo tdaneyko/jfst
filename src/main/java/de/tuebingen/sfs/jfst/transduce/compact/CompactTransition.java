@@ -1,5 +1,7 @@
 package de.tuebingen.sfs.jfst.transduce.compact;
 
+import de.tuebingen.sfs.jfst.symbol.Alphabet;
+
 public class CompactTransition implements Comparable<Object> {
 
     // Mask to get the input symbol out of a transition
@@ -77,6 +79,15 @@ public class CompactTransition implements Comparable<Object> {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return getInSym() + ":" + getOutSym() + " -> " + getToState();
+    }
+
+    public String toString(Alphabet alphabet) {
+        return alphabet.getSymbol(getInSym()) + ":" + alphabet.getSymbol(getOutSym())
+                + " -> " + getToState();
+    }
 
     public static long makeTransition(int inSym, int outSym, int toId) {
         return makeTransition((long) inSym, outSym, toId);

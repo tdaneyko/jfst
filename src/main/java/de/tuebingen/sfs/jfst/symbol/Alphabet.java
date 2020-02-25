@@ -70,8 +70,16 @@ public class Alphabet {
         return epsIdx;
     }
 
+    public boolean epsilon(int id) {
+        return id == epsIdx;
+    }
+
     public int identityId() {
         return idIdx;
+    }
+
+    public boolean identity(int id) {
+        return id == idIdx;
     }
 
     /**
