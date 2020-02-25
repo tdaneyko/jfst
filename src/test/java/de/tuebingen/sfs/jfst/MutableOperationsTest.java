@@ -227,4 +227,23 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst1.apply("bg"));
     }
 
+    public void testIntersection() throws IOException {
+        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+        MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST);
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+
+        fst1.intersect(fst2);
+        fst1.writeToATT(new File(TEST_DIR + "testIntersectOut.att"));
+
+        assertEquals(Collections.singleton("AD"), fst1.apply("ad"));
+        assertEquals(Collections.singleton("C"), fst1.apply("c"));
+        assertEquals(Collections.emptySet(), fst1.apply("bdg"));
+        assertEquals(Collections.emptySet(), fst1.apply("бdг"));
+    }
+
 }

@@ -32,10 +32,12 @@ public class MutableCompactTransducer extends MutableTransducer {
     // Id of next state
     private int s = 0;
 
-    // True if this property holds for sure (false != property does not hold!)
+    // True if these properties hold, false if not
     private boolean epsilonFree;
+    // True if these properties hold, false if unknown
     private boolean deterministic;
     private boolean noUnreachableStates;
+    private boolean noTraps;
     private boolean minimal;
 
     private void reset() {
@@ -47,6 +49,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         this.epsilonFree = true;
         this.deterministic = true;
         this.noUnreachableStates = true;
+        this.noTraps = true;
         this.minimal = true;
     }
 
@@ -59,6 +62,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         this.epsilonFree = true;
         this.deterministic = true;
         this.noUnreachableStates = true;
+        this.noTraps = true;
         this.minimal = true;
     }
 
@@ -101,6 +105,7 @@ public class MutableCompactTransducer extends MutableTransducer {
 
         deterministic = false;
         noUnreachableStates = false;
+        noTraps = false;
         minimal = false;
     }
 
@@ -109,6 +114,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         this.transitions.add(new ArrayList<>());
         this.accepting.add(accepting);
         this.noUnreachableStates = false;
+        this.noTraps = noTraps && accepting;
         this.minimal = false;
         return s++;
     }
@@ -317,13 +323,22 @@ public class MutableCompactTransducer extends MutableTransducer {
         return noUnreachableStates;
     }
 
+    public boolean hasNoTraps() {
+        return noTraps;
+    }
+
+    public boolean checkHasNoTraps() {
+        noTraps = noTraps || minimal || (getNoTraps().size() == nOfStates());
+        return noTraps;
+    }
+
     public boolean isMinimal() {
         return minimal;
     }
 
     public boolean checkIsMinimal() {
         minimal = minimal || isEpsilonFree() && checkIsDeterministic() && checkHasNoUnreachableStates()
-                && (hopcroftAlgorithm().size() == nOfStates());
+                && checkHasNoTraps() && (hopcroftAlgorithm().size() == nOfStates());
         return minimal;
     }
 
@@ -434,52 +449,96 @@ public class MutableCompactTransducer extends MutableTransducer {
         this.noUnreachableStates = true;
     }
 
+    public void removeNonfunctionalStates() {
+        removeUnreachableStates();
+//        removeTraps();
+    }
+
     public void removeUnreachableStates() {
         if (noUnreachableStates)
             return;
 
         Set<Integer> reachables = getReachableStates();
-        if (reachables.size() < nOfStates()) {
-            int[] stateTransformations = new int[nOfStates()];
-            int currentOffset = 0;
-            for (int s = 0; s < nOfStates(); s++) {
-                if (reachables.contains(s))
-                    stateTransformations[s] = s - currentOffset;
-                else {
-                    transitions.remove(s - currentOffset);
-                    accepting.remove(s - currentOffset);
-                    currentOffset++;
-                }
-            }
-            this.s = reachables.size();
-
-            for (List<CompactTransition> stateTrans : transitions) {
-                for (CompactTransition trans : stateTrans) {
-                    trans.setToState(stateTransformations[trans.getToState()]);
-                }
-            }
-        }
+        if (reachables.size() < nOfStates())
+            removeStatesExcept(reachables);
 
         noUnreachableStates = true;
     }
 
     private Set<Integer> getReachableStates() {
-        return transitions.stream()
-                .map(tList -> tList.stream().map(CompactTransition::getToState))
-                .flatMap(toStream -> toStream)
-                .collect(Collectors.toSet());
+        return getReachableStates(start, new HashSet<>());
+    }
+
+    private Set<Integer> getReachableStates(int s, Set<Integer> reachables) {
+        if (!reachables.contains(s)) {
+            reachables.add(s);
+            for (CompactTransition t : transitions.get(s))
+                getReachableStates(t.getToState(), reachables);
+        }
+        return reachables;
+    }
+
+    public void removeTraps() {
+        if (noTraps)
+            return;
+
+        Set<Integer> noTraps = getNoTraps();
+        if (noTraps.size() < nOfStates())
+            removeStatesExcept(noTraps);
+
+        this.noTraps = true;
+    }
+
+    private Set<Integer> getNoTraps() {
+//        int oldStart = start;
+//        List<List<CompactTransition>> oldTrans = transitions;
+//        List<Boolean> oldAcc = new ArrayList<>(accepting);
+//
+//        this.reverse();
+//        Set<Integer> noTraps = getReachableStates();
+//
+//        start = oldStart;
+//        transitions = oldTrans;
+//        accepting = oldAcc;
+//        s = accepting.size();
+
+        MutableCompactTransducer copy = new MutableCompactTransducer(this.iter());
+        copy.reverse();
+        Set<Integer> noTraps = copy.getReachableStates();
+
+        return noTraps;
+    }
+
+    private void removeStatesExcept(Set<Integer> statesToKeep) {
+        int[] stateTransformations = new int[nOfStates()];
+        int currentOffset = 0;
+        for (int s = 0; s < nOfStates(); s++) {
+            System.err.println(s + " " + statesToKeep.contains(s));
+            if (statesToKeep.contains(s))
+                stateTransformations[s] = s - currentOffset;
+            else {
+                transitions.remove(s - currentOffset);
+                accepting.remove(s - currentOffset);
+                currentOffset++;
+            }
+        }
+        this.s = statesToKeep.size();
+
+        for (List<CompactTransition> stateTrans : transitions) {
+            for (CompactTransition trans : stateTrans) {
+                trans.setToState(stateTransformations[trans.getToState()]);
+            }
+        }
     }
 
     @Override
-    // TODO: Make more efficient
     public void minimize() {
         if (minimal)
             return;
 
         if (!deterministic)
             this.determinize();
-        if (!noUnreachableStates)
-            this.removeUnreachableStates();
+        removeNonfunctionalStates();
 
         Set<Set<Integer>> equivSets = hopcroftAlgorithm();
         if (equivSets.size() < nOfStates()) {
@@ -512,6 +571,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         minimal = true;
     }
 
+    // TODO: Make more efficient
     private Set<Set<Integer>> hopcroftAlgorithm() {
         Set<Integer> finalStates = new HashSet<>();
         Set<Integer> nonFinalStates = new HashSet<>();
@@ -668,6 +728,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         setAccepting(oldStart, true);
 
         deterministic = false;
+        noTraps = noUnreachableStates;
         noUnreachableStates = false;
         minimal = false;
     }
@@ -711,6 +772,20 @@ public class MutableCompactTransducer extends MutableTransducer {
         this.accepting.addAll(accepting);
     }
 
+    private void mergeFlags(Transducer other) {
+        deterministic = false;
+        minimal = false;
+        if (other instanceof MutableCompactTransducer) {
+            MutableCompactTransducer mutOther = (MutableCompactTransducer) other;
+            noUnreachableStates = noUnreachableStates && mutOther.noUnreachableStates;
+            noTraps = noTraps && mutOther.noTraps;
+        }
+        else {
+            noUnreachableStates = false;
+            noTraps = false;
+        }
+    }
+
     @Override
     public void concat(Transducer other) {
         int startOfAppended = mergeTransducers(other);
@@ -721,9 +796,7 @@ public class MutableCompactTransducer extends MutableTransducer {
             }
         }
 
-        deterministic = false;
-        noUnreachableStates = false;
-        minimal = false;
+        mergeFlags(other);
     }
 
     @Override
@@ -734,9 +807,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         addEpsilonTransition(start, oldStart);
         addEpsilonTransition(start, otherStart);
 
-        deterministic = false;
-        noUnreachableStates = false;
-        minimal = false;
+        mergeFlags(other);
     }
 
     @Override
@@ -746,7 +817,68 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void intersect(Transducer other) {
-        // TODO: Implement
+        int n = nOfStates();
+        int m = other.nOfStates();
+        int oldStart = start;
+        List<List<CompactTransition>> oldTrans = transitions;
+        List<Boolean> oldAcc = accepting;
+        reset();
+
+        Alphabet otherAlph = other.getAlphabet();
+        StateIterator iter = other.iter();
+        int s1 = 0;
+        while (iter.hasNextState()) {
+            iter.nextState();
+
+            for (int s2 = 0; s2 < n; s2++)
+                addState(iter.accepting() && oldAcc.get(s2));
+
+            while (iter.hasNextTransition()) {
+                iter.nextTransition();
+                String inSym = otherAlph.getSymbol(iter.inId());
+                String outSym = otherAlph.getSymbol(iter.outId());
+                int to1 = iter.toId();
+                System.err.println(s1 + " --(" + inSym + ":" + outSym + ")-> " + to1);
+                if (inSym.equals(Alphabet.IDENTITY_STRING)) {
+                    for (int s2 = 0; s2 < n; s2++) {
+                        int s = m * s1 + s2;
+                        for (CompactTransition trans : oldTrans.get(s2)) {
+                            int inId = trans.getInSym();
+                            int outId = trans.getOutSym();
+                            if (inId == outId)
+                                addTransition(s, new CompactTransition(inId, outId, m * to1 + trans.getToState()));
+                        }
+
+                    }
+                } else if (alphabet.contains(inSym) && alphabet.contains(outSym)) {
+                    int inId = alphabet.getId(inSym);
+                    int outId = alphabet.getId(outSym);
+                    for (int s2 = 0; s2 < n; s2++) {
+                        int s = m * s1 + s2;
+                        List<CompactTransition> s2Trans = oldTrans.get(s2);
+                        int t2 = Collections.binarySearch(s2Trans,
+                                CompactTransition.makeTransition(inId, outId, 0));
+                        if (t2 < 0)
+                            t2 = -(t2 + 1);
+                        while (t2 < s2Trans.size()) {
+                            CompactTransition trans = s2Trans.get(t2);
+                            if (trans.getInSym() == inId && trans.getOutSym() == outId)
+                                addTransition(s, new CompactTransition(inId, outId, m * to1 + trans.getToState()));
+                            else
+                                break;
+                            t2++;
+                        }
+                    }
+                }
+            }
+            s1++;
+        }
+
+        start = m * iter.getStartState() + oldStart;
+
+        deterministic = false;
+        minimal = false;
+        removeNonfunctionalStates();
     }
 
     @Override
