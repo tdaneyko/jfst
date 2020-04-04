@@ -3,8 +3,10 @@ package de.tuebingen.sfs.jfst.transduce.compact;
 import de.tuebingen.sfs.jfst.symbol.Alphabet;
 import de.tuebingen.sfs.jfst.io.*;
 import de.tuebingen.sfs.jfst.transduce.MutableTransducer;
+import de.tuebingen.sfs.jfst.transduce.Path;
 import de.tuebingen.sfs.jfst.transduce.StateIterator;
 import de.tuebingen.sfs.jfst.transduce.Transducer;
+import sun.reflect.generics.tree.Tree;
 
 import java.io.InputStream;
 import java.util.*;
@@ -349,6 +351,41 @@ public class MutableCompactTransducer extends MutableTransducer {
     @Override
     public StateIterator iter() {
         return new MutableCompactTransducerStateIterator(this);
+    }
+
+    @Override
+    public TreeSet<CompactPath> extractPaths() {
+        int[] lastVisited = new int[nOfStates()];
+        Arrays.fill(lastVisited, -1);
+        return collectPaths(start, 0, lastVisited, new TreeSet<>());
+    }
+
+    private TreeSet<CompactPath> collectPaths(int curState, int depth, int[] lastVisited, Set<CompactTransition> takenTrans) {
+        int curLastVisitied = lastVisited[curState];
+        lastVisited[curState] = depth;
+        List<CompactTransition> stateTrans = transitions.get(curState);
+        TreeSet<CompactPath> paths = new TreeSet<>();
+        for (CompactTransition trans : stateTrans) {
+            if (!takenTrans.contains(trans)) {
+                takenTrans.add(trans);
+                int toState = trans.getToState();
+                int symPair = trans.getSymPair();
+                TreeSet<CompactPath> newPaths = collectPaths(toState, depth + 1, lastVisited, takenTrans);
+                for (CompactPath path : newPaths) {
+                    path.prependSymPair(symPair);
+                    if (curLastVisitied >= 0)
+                        path.markCircle(curLastVisitied, depth);
+                }
+                paths.addAll(newPaths);
+                takenTrans.remove(trans);
+            }
+        }
+        lastVisited[curState] = curLastVisitied;
+
+        if (isAccepting(curState))
+            paths.add(new CompactPath(depth));
+
+        return paths;
     }
 
     public void removeEpsilons() {
