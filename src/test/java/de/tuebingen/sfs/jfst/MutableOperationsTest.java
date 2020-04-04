@@ -13,6 +13,26 @@ public class MutableOperationsTest extends TestCase {
 
     private static final String TEST_DIR = "src/test/resources/";
 
+    public void testCopy() throws IOException {
+        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+
+        assertEquals(10, fst1.nOfStates());
+        assertEquals(14, fst1.nOfTransitions());
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+
+        MutableCompactTransducer fst2 = fst1.copy();
+        fst2.writeToATT(new File(TEST_DIR + "testCopyOut.att"));
+
+        assertEquals(fst1.nOfStates(), fst2.nOfStates());
+        assertEquals(fst1.nOfTransitions(), fst2.nOfTransitions());
+        assertEquals(fst1.apply("bdg"), fst2.apply("bdg"));
+        assertEquals(fst1.apply("xxxefg"), fst2.apply("xxxefg"));
+        assertEquals(fst1.apply("bg"), fst2.apply("bg"));
+    }
+
     public void testRemoveEpsilons() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
                 new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
@@ -68,6 +88,29 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst.apply("bg"));
 
         fst.removeUnreachableStates();
+
+        assertEquals(10, fst.nOfStates());
+        assertEquals(14, fst.nOfTransitions());
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+    }
+
+    public void testRemoveTraps() throws IOException {
+        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+
+        int s = fst.addState();
+        fst.addTransition(0, "b", "B", s);
+
+        assertEquals(11, fst.nOfStates());
+        assertEquals(15, fst.nOfTransitions());
+        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+        assertEquals(Collections.emptySet(), fst.apply("bg"));
+
+        fst.removeTraps();
+        fst.writeToATT(new File(TEST_DIR + "testRemoveTrapsOut.att"));
 
         assertEquals(10, fst.nOfStates());
         assertEquals(14, fst.nOfTransitions());
@@ -167,6 +210,7 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst.apply("bg"));
 
         fst.reverse();
+        fst.writeToATT(new File(TEST_DIR + "testReverseOut.att"));
 
         assertEquals(Collections.singleton("GDB"), fst.apply("gdb"));
         assertEquals(Collections.singleton("GFEXXX"), fst.apply("gfexxx"));

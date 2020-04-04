@@ -233,6 +233,10 @@ public class MutableCompactTransducer extends MutableTransducer {
         return new CompactTransducer(this.iter());
     }
 
+    public MutableCompactTransducer copy() {
+        return new MutableCompactTransducer(this.iter());
+    }
+
     @Override
     public int getStartState() {
         return start;
@@ -451,7 +455,7 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     public void removeNonfunctionalStates() {
         removeUnreachableStates();
-//        removeTraps();
+        removeTraps();
     }
 
     public void removeUnreachableStates() {
@@ -490,21 +494,10 @@ public class MutableCompactTransducer extends MutableTransducer {
     }
 
     private Set<Integer> getNoTraps() {
-//        int oldStart = start;
-//        List<List<CompactTransition>> oldTrans = transitions;
-//        List<Boolean> oldAcc = new ArrayList<>(accepting);
-//
-//        this.reverse();
-//        Set<Integer> noTraps = getReachableStates();
-//
-//        start = oldStart;
-//        transitions = oldTrans;
-//        accepting = oldAcc;
-//        s = accepting.size();
-
-        MutableCompactTransducer copy = new MutableCompactTransducer(this.iter());
+        MutableCompactTransducer copy = copy();
         copy.reverse();
         Set<Integer> noTraps = copy.getReachableStates();
+        noTraps.remove(nOfStates()); // remove new start state of reverse FST
 
         return noTraps;
     }
@@ -513,20 +506,27 @@ public class MutableCompactTransducer extends MutableTransducer {
         int[] stateTransformations = new int[nOfStates()];
         int currentOffset = 0;
         for (int s = 0; s < nOfStates(); s++) {
-            System.err.println(s + " " + statesToKeep.contains(s));
             if (statesToKeep.contains(s))
                 stateTransformations[s] = s - currentOffset;
             else {
                 transitions.remove(s - currentOffset);
                 accepting.remove(s - currentOffset);
+                if (start > currentOffset)
+                    start--;
                 currentOffset++;
             }
         }
         this.s = statesToKeep.size();
 
         for (List<CompactTransition> stateTrans : transitions) {
-            for (CompactTransition trans : stateTrans) {
-                trans.setToState(stateTransformations[trans.getToState()]);
+            Iterator<CompactTransition> transIter = stateTrans.iterator();
+            while (transIter.hasNext()) {
+                CompactTransition trans = transIter.next();
+                int toState = trans.getToState();
+                if (statesToKeep.contains(toState))
+                    trans.setToState(stateTransformations[trans.getToState()]);
+                else
+                    transIter.remove();
             }
         }
     }
