@@ -4,6 +4,11 @@ import de.tuebingen.sfs.jfst.symbol.Alphabet;
 
 public abstract class MutableTransducer extends ApplicableTransducer {
 
+    @Override
+    public MutableTransducer makeMutable() {
+        return this;
+    }
+
     public int addState() {
         return addState(false);
     }
@@ -40,6 +45,8 @@ public abstract class MutableTransducer extends ApplicableTransducer {
 
     public abstract void reverse();
 
+    public abstract void complement();
+
     public abstract void concat(Transducer other);
 
     public abstract void union(Transducer other);
@@ -48,7 +55,11 @@ public abstract class MutableTransducer extends ApplicableTransducer {
 
     public abstract void intersect(Transducer other);
 
-    public abstract void subtract(Transducer other);
+    public void subtract(Transducer other) {
+        MutableTransducer otherMut = other.makeMutable();
+        otherMut.complement();
+        intersect(otherMut);
+    }
 
     public abstract void compose(Transducer other);
 

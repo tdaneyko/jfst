@@ -217,6 +217,22 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst.apply("gb"));
     }
 
+//    public void testComplement() throws IOException {
+//        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+//                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+//
+//        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+//        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+//        assertEquals(Collections.emptySet(), fst.apply("bg"));
+//
+//        fst.complement();
+//        fst.writeToATT(new File(TEST_DIR + "testComplementOut.att"));
+//
+//        assertEquals(Collections.emptySet(), fst.apply("gdb"));
+//        assertEquals(Collections.emptySet(), fst.apply("gfexxx"));
+////        assertEquals(Collections.emptySet(), fst.apply("gb"));
+//    }
+
     public void testConcatSameAlph() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
                 new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
@@ -288,6 +304,27 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.singleton("C"), fst1.apply("c"));
         assertEquals(Collections.emptySet(), fst1.apply("bdg"));
         assertEquals(Collections.emptySet(), fst1.apply("бdг"));
+    }
+
+    public void testSubtract() throws IOException {
+        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+        MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST);
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.emptySet(), fst2.apply("bdg"));
+        assertEquals(Collections.singleton("AD"), fst1.apply("ad"));
+        assertEquals(fst1.apply("ad"), fst2.apply("ad"));
+        assertEquals(Collections.singleton("C"), fst1.apply("c"));
+        assertEquals(fst1.apply("c"), fst2.apply("c"));
+
+        fst1.subtract(fst2);
+        fst1.writeToATT(new File(TEST_DIR + "testSubtractOut.att"));
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.emptySet(), fst1.apply("ad"));
+        assertEquals(Collections.emptySet(), fst1.apply("c"));
     }
 
 }

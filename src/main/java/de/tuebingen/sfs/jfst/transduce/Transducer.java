@@ -47,6 +47,11 @@ public interface Transducer {
     StateIterator iter();
 
     /**
+     * @return A mutable version of this transducer
+     */
+    MutableTransducer makeMutable();
+
+    /**
      * Apply this transducer to an input string.
      * @param in The input string
      * @return The output strings matched to the input string by this transducer

@@ -10,6 +10,9 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static de.tuebingen.sfs.jfst.transduce.compact.CompactTransition.GET_IN_SYM;
+import static de.tuebingen.sfs.jfst.transduce.compact.CompactTransition.GET_OUT_SYM;
+
 /**
  * A mutable Transducer to which new states and transitions may be added.
  */
@@ -126,8 +129,11 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void addTransition(int from, String inSym, String outSym, int to) {
-        addTransition(from, new CompactTransition(
-                alphabet.getIdOrCreate(inSym), alphabet.getIdOrCreate(outSym), to));
+        addTransition(from, alphabet.getIdOrCreate(inSym), alphabet.getIdOrCreate(outSym), to);
+    }
+
+    private void addTransition(int from, int inSym, int outSym, int to) {
+        addTransition(from, new CompactTransition(inSym, outSym, to));
     }
 
     private void addTransition(int from, CompactTransition transition) {
@@ -231,6 +237,11 @@ public class MutableCompactTransducer extends MutableTransducer {
      */
     public CompactTransducer makeCompact() {
         return new CompactTransducer(this.iter());
+    }
+
+    @Override
+    public MutableTransducer makeMutable() {
+        return this.copy();
     }
 
     public MutableCompactTransducer copy() {
@@ -733,6 +744,38 @@ public class MutableCompactTransducer extends MutableTransducer {
         minimal = false;
     }
 
+    @Override
+    public void complement() {
+        if (!deterministic)
+            determinize();
+
+        // Make FST total, i.e. add transitions for all symbol pairs to each state
+        int trapState = addState(false);
+        for (int state = 0; state < transitions.size(); state++) {
+            Set<Long> existingTransitions = transitions.get(state).stream()
+                    .map(trans -> trans.getInternalRepresentation() & (GET_IN_SYM | GET_OUT_SYM))
+                    .collect(Collectors.toSet());
+            int idIdx = alphabet.identityId();
+            boolean hasIdTrans = existingTransitions.contains(
+                    CompactTransition.makeTransition(idIdx, idIdx, 0));
+            for (int inSym = 0; inSym < alphabet.size(); inSym++) {
+                if (inSym != idIdx) {
+                    for (int outSym = 0; outSym < alphabet.size(); outSym++) {
+                        if (outSym != idIdx) {
+                            long trans = CompactTransition.makeTransition(inSym, outSym, 0);
+                            if (!existingTransitions.contains(trans)
+                                    && (!hasIdTrans || inSym != outSym))
+                                addTransition(state, inSym, outSym, trapState);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Flip state acceptance
+        accepting = accepting.stream().map(acc -> !acc).collect(Collectors.toList());
+    }
+
     private int[] mergeAlphabets(Alphabet other) {
         if (Arrays.equals(alphabet.getSymbols(), other.getSymbols()))
             return null;
@@ -930,7 +973,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         @Override
         public boolean hasNext() {
             return i < stateTrans.size() && (inSym == 1 ||
-                    (stateTrans.get(i).getInternalRepresentation() & CompactTransition.GET_IN_SYM) == inSym);
+                    (stateTrans.get(i).getInternalRepresentation() & GET_IN_SYM) == inSym);
         }
 
         @Override

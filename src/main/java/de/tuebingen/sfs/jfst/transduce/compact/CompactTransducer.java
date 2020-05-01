@@ -3,6 +3,7 @@ package de.tuebingen.sfs.jfst.transduce.compact;
 import de.tuebingen.sfs.jfst.symbol.Alphabet;
 import de.tuebingen.sfs.jfst.io.*;
 import de.tuebingen.sfs.jfst.transduce.ApplicableTransducer;
+import de.tuebingen.sfs.jfst.transduce.MutableTransducer;
 import de.tuebingen.sfs.jfst.transduce.StateIterator;
 
 import java.io.InputStream;
@@ -157,6 +158,11 @@ public class CompactTransducer extends ApplicableTransducer {
     @Override
     public CompactTransducerStateIterator iter() {
         return new CompactTransducerStateIterator(this);
+    }
+
+    @Override
+    public MutableTransducer makeMutable() {
+        return new MutableCompactTransducer(iter());
     }
 
     @Override
