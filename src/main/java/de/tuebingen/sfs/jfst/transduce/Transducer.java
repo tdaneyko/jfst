@@ -5,7 +5,6 @@ import de.tuebingen.sfs.jfst.symbol.Alphabet;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -46,11 +45,6 @@ public interface Transducer {
      * @return An iterator over the states of this transducer
      */
     StateIterator iter();
-
-    /**
-     * @return All paths of this transducer
-     */
-    Collection<? extends Path> extractPaths();
 
     /**
      * Apply this transducer to an input string.

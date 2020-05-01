@@ -43,10 +43,6 @@ public class CompactTransition implements Comparable<Object> {
         setOutSym(oldInSym);
     }
 
-    public int getSymPair() {
-        return (int) ((transition >> 32) & GET_TO_STATE);
-    }
-
     public int getToState() {
         return toIdFromTransition(transition);
     }
