@@ -17,9 +17,13 @@ public class Alphabet {
      */
     public static final String EPSILON_STRING = "\u0000";
     /**
-     * String representation of the identity symbol (copy symbol)
+     * String representation of the unknown identity symbol (== unknown character mapped to itself)
      */
-    public static final String IDENTITY_STRING = "\u0001";
+    public static final String UNKNOWN_IDENTITY_STRING = "\u0001";
+    /**
+     * String representation of the unknown symbol (== any unknown character)
+     */
+    public static final String UNKNOWN_STRING = "\u0002";
 
 
     // Symbols in alphabetic order
@@ -30,6 +34,8 @@ public class Alphabet {
     private int epsIdx;
     // Id of the identity symbol
     private int idIdx;
+    // Id of the unknown symbol
+    private int unknIdx;
 
     /**
      * Create an empty Alphabet.
@@ -37,8 +43,9 @@ public class Alphabet {
     public Alphabet() {
         sym2id = new TreeMap<>();
         id2sym = new ArrayList<>();
-        idIdx = -1;
-        epsIdx = -1;
+        addSymbol(EPSILON_STRING);
+        addSymbol(UNKNOWN_IDENTITY_STRING);
+        addSymbol(UNKNOWN_STRING);
     }
 
     /**
@@ -80,6 +87,14 @@ public class Alphabet {
 
     public boolean identity(int id) {
         return id == idIdx;
+    }
+
+    public int unknownId() {
+        return unknIdx;
+    }
+
+    public boolean unknown(int id) {
+        return id == unknIdx;
     }
 
     /**
@@ -129,10 +144,17 @@ public class Alphabet {
             return sym2id.get(symbol);
         else {
             int id = id2sym.size();
-            if (symbol.equals(EPSILON_STRING))
-                epsIdx = id;
-            else if (symbol.equals(IDENTITY_STRING))
-                idIdx = id;
+            switch (symbol) {
+                case EPSILON_STRING:
+                    epsIdx = id;
+                    break;
+                case UNKNOWN_IDENTITY_STRING:
+                    idIdx = id;
+                    break;
+                case UNKNOWN_STRING:
+                    unknIdx = id;
+                    break;
+            }
 
             sym2id.put(symbol, id);
             id2sym.add(symbol);

@@ -44,8 +44,8 @@ public class AttWriter {
             while (states.hasNextTransition()) {
                 states.nextTransition();
                 int toState = switchZeroState(states.toId(), startState);
-                String inSym = (states.inId() == alph.identityId()) ? producer.identity() : alph.getSymbol(states.inId());
-                String outSym = (states.outId() == alph.identityId()) ? producer.identity() : alph.getSymbol(states.outId());
+                String inSym = getSymbolRepresentation(states.inId(), alph, producer);
+                String outSym = getSymbolRepresentation(states.outId(), alph, producer);
                 writer.println(switchZeroState(fromState, startState) + "\t" + toState + "\t" + inSym + "\t" + outSym);
             }
             if (states.accepting())
@@ -61,6 +61,17 @@ public class AttWriter {
         if (thisState == otherState)
             return 0;
         return thisState;
+    }
+
+    private static String getSymbolRepresentation(int symId, Alphabet alph, FstProducer producer) {
+        if (symId == alph.epsilonId())
+            return producer.epsilon();
+        else if (symId == alph.unknownId())
+            return producer.unknown();
+        else if (symId == alph.identityId())
+            return producer.identity();
+        else
+            return alph.getSymbol(symId);
     }
 
 }

@@ -120,17 +120,24 @@ public abstract class ApplicableTransducer implements Transducer {
                 }
             }
 
-            // ...and identity transitions
-            char c = s.charAt(strIdx);
+            // ...and unknown transitions
             if (matchingSymbols.isEmpty()) {
-                Iterator<Transition> idIter = getTransitionIterator(Alphabet.IDENTITY_STRING, statIdx);
+                char c = s.charAt(strIdx);
+                // Unknown identity
+                Iterator<Transition> idIter = getTransitionIterator(Alphabet.UNKNOWN_IDENTITY_STRING, statIdx);
                 while (idIter.hasNext()) {
                     Transition trans = idIter.next();
                     Set<String> prev = apply(s, strIdx + 1, trans.toState, 0, maxIns, ignoreInInput);
                     for (String r : prev)
                         res.add(c + r);
-                    if (!prev.isEmpty())
-                        break;
+                }
+                // Unknown - other
+                Iterator<Transition> unknIter = getTransitionIterator(Alphabet.UNKNOWN_STRING, statIdx);
+                while (unknIter.hasNext()) {
+                    Transition trans = unknIter.next();
+                    Set<String> prev = apply(s, strIdx + 1, trans.toState, 0, maxIns, ignoreInInput);
+                    for (String r : prev)
+                        res.add(trans.outSym + r);
                 }
             }
         }
@@ -228,12 +235,21 @@ public abstract class ApplicableTransducer implements Transducer {
                 }
             }
 
-            // ...and identity transitions
-            char c = s.charAt(strIdx);
+            // ...and unknown transitions
             if (matchingSymbols.isEmpty()) {
-                Iterator<Transition> idIter = getTransitionIterator(Alphabet.IDENTITY_STRING, statIdx);
+                char c = s.charAt(strIdx);
+                // Unknown identity
+                Iterator<Transition> idIter = getTransitionIterator(Alphabet.UNKNOWN_IDENTITY_STRING, statIdx);
                 while (idIter.hasNext()) {
                     Transition trans = idIter.next();
+                    Set<String> prev = prefixSearch(s, strIdx + 1, trans.toState, maxSuffix, ignoreInInput);
+                    for (String r : prev)
+                        res.add(c + r);
+                }
+                // Unknown - other
+                Iterator<Transition> unknIter = getTransitionIterator(Alphabet.UNKNOWN_STRING, statIdx);
+                while (unknIter.hasNext()) {
+                    Transition trans = unknIter.next();
                     Set<String> prev = prefixSearch(s, strIdx + 1, trans.toState, maxSuffix, ignoreInInput);
                     for (String r : prev)
                         res.add(c + r);

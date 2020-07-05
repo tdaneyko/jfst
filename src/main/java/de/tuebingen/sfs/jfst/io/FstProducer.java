@@ -17,6 +17,11 @@ public enum FstProducer {
         }
 
         @Override
+        public String unknown() {
+            return "@0@";
+        }
+
+        @Override
         public String identity() {
             return "@_IDENTITY_SYMBOL_@";
         }
@@ -34,6 +39,11 @@ public enum FstProducer {
         @Override
         public String epsilon() {
             return "<>";
+        }
+
+        @Override
+        public String unknown() {
+            return "";
         }
 
         @Override
@@ -57,8 +67,13 @@ public enum FstProducer {
         }
 
         @Override
+        public String unknown() {
+            return Alphabet.UNKNOWN_STRING;
+        }
+
+        @Override
         public String identity() {
-            return Alphabet.IDENTITY_STRING;
+            return Alphabet.UNKNOWN_IDENTITY_STRING;
         }
 
         @Override
@@ -74,8 +89,14 @@ public enum FstProducer {
     public abstract String epsilon();
 
     /**
-     * Get the identity representation of this producer.
-     * @return The identity representation of this producer
+     * Get the unknown symbol representation of this producer.
+     * @return The unknown symbol representation of this producer
+     */
+    public abstract String unknown();
+
+    /**
+     * Get the unknown identity representation of this producer.
+     * @return The unknown identity representation of this producer
      */
     public abstract String identity();
 
@@ -95,7 +116,7 @@ public enum FstProducer {
         if (s.equals(epsilon()))
             return Alphabet.EPSILON_STRING;
         else if (s.equals(identity()))
-            return Alphabet.IDENTITY_STRING;
+            return Alphabet.UNKNOWN_IDENTITY_STRING;
         else if (s.equals(space()))
             return " ";
         return s;

@@ -49,7 +49,7 @@ public interface Transducer {
     /**
      * @return A mutable version of this transducer
      */
-    MutableTransducer makeMutable();
+    MutableTransducer getMutableCopy();
 
     /**
      * Apply this transducer to an input string.

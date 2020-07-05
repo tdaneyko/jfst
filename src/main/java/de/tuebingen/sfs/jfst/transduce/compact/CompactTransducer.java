@@ -161,7 +161,7 @@ public class CompactTransducer extends ApplicableTransducer {
     }
 
     @Override
-    public MutableTransducer makeMutable() {
+    public MutableTransducer getMutableCopy() {
         return new MutableCompactTransducer(iter());
     }
 

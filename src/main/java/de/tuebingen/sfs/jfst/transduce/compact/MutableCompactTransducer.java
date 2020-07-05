@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static de.tuebingen.sfs.jfst.transduce.compact.CompactTransition.GET_IN_SYM;
-import static de.tuebingen.sfs.jfst.transduce.compact.CompactTransition.GET_OUT_SYM;
 
 /**
  * A mutable Transducer to which new states and transitions may be added.
@@ -240,8 +239,40 @@ public class MutableCompactTransducer extends MutableTransducer {
     }
 
     @Override
-    public MutableTransducer makeMutable() {
+    public MutableTransducer getMutableCopy() {
         return this.copy();
+    }
+
+    @Override
+    public void addSymbol(String symbol) {
+        if (!alphabet.contains(symbol)) {
+            int symId = alphabet.addSymbol(symbol);
+            for (int state = 0; state < transitions.size(); state++) {
+                List<CompactTransition> newTrans = new ArrayList<>();
+                for (CompactTransition trans : transitions.get(state)) {
+                    int inSym = trans.getInSym();
+                    int outSym = trans.getOutSym();
+                    int toState = trans.getToState();
+                    if (alphabet.identity(inSym))
+                        newTrans.add(new CompactTransition(symId, symId, toState));
+                    else if (alphabet.unknown(inSym) && alphabet.unknown(outSym)) {
+                        for (int otherSymId = 0; otherSymId < alphabet.size(); otherSymId++) {
+                            if (!alphabet.epsilon(otherSymId) && !alphabet.identity(otherSymId)) {
+                                newTrans.add(new CompactTransition(symId, otherSymId, toState));
+                                newTrans.add(new CompactTransition(otherSymId, symId, toState));
+                            }
+                        }
+                    }
+                    else if (alphabet.unknown(inSym))
+                        newTrans.add(new CompactTransition(symId, outSym, toState));
+                    else if (alphabet.unknown(outSym))
+                        newTrans.add(new CompactTransition(inSym, symId, toState));
+                }
+
+                for (CompactTransition nt : newTrans)
+                    addTransition(state, nt);
+            }
+        }
     }
 
     public MutableCompactTransducer copy() {
@@ -744,38 +775,6 @@ public class MutableCompactTransducer extends MutableTransducer {
         minimal = false;
     }
 
-    @Override
-    public void complement() {
-        if (!deterministic)
-            determinize();
-
-        // Make FST total, i.e. add transitions for all symbol pairs to each state
-        int trapState = addState(false);
-        for (int state = 0; state < transitions.size(); state++) {
-            Set<Long> existingTransitions = transitions.get(state).stream()
-                    .map(trans -> trans.getInternalRepresentation() & (GET_IN_SYM | GET_OUT_SYM))
-                    .collect(Collectors.toSet());
-            int idIdx = alphabet.identityId();
-            boolean hasIdTrans = existingTransitions.contains(
-                    CompactTransition.makeTransition(idIdx, idIdx, 0));
-            for (int inSym = 0; inSym < alphabet.size(); inSym++) {
-                if (inSym != idIdx) {
-                    for (int outSym = 0; outSym < alphabet.size(); outSym++) {
-                        if (outSym != idIdx) {
-                            long trans = CompactTransition.makeTransition(inSym, outSym, 0);
-                            if (!existingTransitions.contains(trans)
-                                    && (!hasIdTrans || inSym != outSym))
-                                addTransition(state, inSym, outSym, trapState);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Flip state acceptance
-        accepting = accepting.stream().map(acc -> !acc).collect(Collectors.toList());
-    }
-
     private int[] mergeAlphabets(Alphabet other) {
         if (Arrays.equals(alphabet.getSymbols(), other.getSymbols()))
             return null;
@@ -860,6 +859,14 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void intersect(Transducer other) {
+        MutableTransducer otherMut = other.getMutableCopy();
+        for (String sym : alphabet.getSymbols())
+            otherMut.addSymbol(sym);
+
+        Alphabet otherAlph = other.getAlphabet();
+        for (String sym : otherAlph.getSymbols())
+            this.addSymbol(sym);
+
         int n = nOfStates();
         int m = other.nOfStates();
         int oldStart = start;
@@ -867,54 +874,40 @@ public class MutableCompactTransducer extends MutableTransducer {
         List<Boolean> oldAcc = accepting;
         reset();
 
-        Alphabet otherAlph = other.getAlphabet();
         StateIterator iter = other.iter();
-        int s1 = 0;
+        int otherState = 0;
         while (iter.hasNextState()) {
             iter.nextState();
 
-            for (int s2 = 0; s2 < n; s2++)
-                addState(iter.accepting() && oldAcc.get(s2));
+            for (int thisState = 0; thisState < n; thisState++)
+                addState(iter.accepting() && oldAcc.get(thisState));
 
             while (iter.hasNextTransition()) {
                 iter.nextTransition();
-                String inSym = otherAlph.getSymbol(iter.inId());
-                String outSym = otherAlph.getSymbol(iter.outId());
-                int to1 = iter.toId();
-                System.err.println(s1 + " --(" + inSym + ":" + outSym + ")-> " + to1);
-                if (inSym.equals(Alphabet.IDENTITY_STRING)) {
-                    for (int s2 = 0; s2 < n; s2++) {
-                        int s = m * s1 + s2;
-                        for (CompactTransition trans : oldTrans.get(s2)) {
-                            int inId = trans.getInSym();
-                            int outId = trans.getOutSym();
-                            if (inId == outId)
-                                addTransition(s, new CompactTransition(inId, outId, m * to1 + trans.getToState()));
-                        }
-
-                    }
-                } else if (alphabet.contains(inSym) && alphabet.contains(outSym)) {
-                    int inId = alphabet.getId(inSym);
-                    int outId = alphabet.getId(outSym);
-                    for (int s2 = 0; s2 < n; s2++) {
-                        int s = m * s1 + s2;
-                        List<CompactTransition> s2Trans = oldTrans.get(s2);
-                        int t2 = Collections.binarySearch(s2Trans,
-                                CompactTransition.makeTransition(inId, outId, 0));
-                        if (t2 < 0)
-                            t2 = -(t2 + 1);
-                        while (t2 < s2Trans.size()) {
-                            CompactTransition trans = s2Trans.get(t2);
-                            if (trans.getInSym() == inId && trans.getOutSym() == outId)
-                                addTransition(s, new CompactTransition(inId, outId, m * to1 + trans.getToState()));
-                            else
-                                break;
-                            t2++;
-                        }
+                String otherInSym = otherAlph.getSymbol(iter.inId());
+                String otherOutSym = otherAlph.getSymbol(iter.outId());
+                int otherToState = iter.toId();
+                System.err.println(otherState + " --(" + otherInSym + ":" + otherOutSym + ")-> " + otherToState);
+                int otherInId = alphabet.getId(otherInSym);
+                int otherOutId = alphabet.getId(otherOutSym);
+                for (int thisState = 0; thisState < n; thisState++) {
+                    int s = m * otherState + thisState;
+                    List<CompactTransition> thisStateTrans = oldTrans.get(thisState);
+                    int thisTransIdx = Collections.binarySearch(thisStateTrans,
+                            CompactTransition.makeTransition(otherInId, otherOutId, 0));
+                    if (thisTransIdx < 0)
+                        thisTransIdx = -(thisTransIdx + 1);
+                    while (thisTransIdx < thisStateTrans.size()) {
+                        CompactTransition thisTrans = thisStateTrans.get(thisTransIdx);
+                        if (thisTrans.getInSym() == otherInId && thisTrans.getOutSym() == otherOutId)
+                            addTransition(s, new CompactTransition(otherInId, otherOutId, m * otherToState + thisTrans.getToState()));
+                        else
+                            break;
+                        thisTransIdx++;
                     }
                 }
             }
-            s1++;
+            otherState++;
         }
 
         start = m * iter.getStartState() + oldStart;
