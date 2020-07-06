@@ -5,12 +5,14 @@ import de.tuebingen.sfs.jfst.io.*;
 import de.tuebingen.sfs.jfst.transduce.MutableTransducer;
 import de.tuebingen.sfs.jfst.transduce.StateIterator;
 import de.tuebingen.sfs.jfst.transduce.Transducer;
+import de.tuebingen.sfs.util.string.StringUtils;
 
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static de.tuebingen.sfs.jfst.transduce.compact.CompactTransition.GET_IN_SYM;
+import static de.tuebingen.sfs.jfst.transduce.compact.CompactTransition.GET_OUT_SYM;
 
 /**
  * A mutable Transducer to which new states and transitions may be added.
@@ -874,24 +876,28 @@ public class MutableCompactTransducer extends MutableTransducer {
         List<Boolean> oldAcc = accepting;
         reset();
 
+        // n * m states needed
+        for (int s = 0; s < m * n; s++)
+            addState();
+
         StateIterator iter = other.iter();
         int otherState = 0;
         while (iter.hasNextState()) {
             iter.nextState();
 
             for (int thisState = 0; thisState < n; thisState++)
-                addState(iter.accepting() && oldAcc.get(thisState));
+                setAccepting(n * otherState + thisState, iter.accepting() && oldAcc.get(thisState));
 
             while (iter.hasNextTransition()) {
                 iter.nextTransition();
                 String otherInSym = otherAlph.getSymbol(iter.inId());
                 String otherOutSym = otherAlph.getSymbol(iter.outId());
                 int otherToState = iter.toId();
-                System.err.println(otherState + " --(" + otherInSym + ":" + otherOutSym + ")-> " + otherToState);
+//                System.err.println(otherState + " --(" + otherInSym + ":" + otherOutSym + ")-> " + otherToState);
                 int otherInId = alphabet.getId(otherInSym);
                 int otherOutId = alphabet.getId(otherOutSym);
                 for (int thisState = 0; thisState < n; thisState++) {
-                    int s = m * otherState + thisState;
+                    int s = n * otherState + thisState;
                     List<CompactTransition> thisStateTrans = oldTrans.get(thisState);
                     int thisTransIdx = Collections.binarySearch(thisStateTrans,
                             CompactTransition.makeTransition(otherInId, otherOutId, 0));
@@ -900,7 +906,7 @@ public class MutableCompactTransducer extends MutableTransducer {
                     while (thisTransIdx < thisStateTrans.size()) {
                         CompactTransition thisTrans = thisStateTrans.get(thisTransIdx);
                         if (thisTrans.getInSym() == otherInId && thisTrans.getOutSym() == otherOutId)
-                            addTransition(s, new CompactTransition(otherInId, otherOutId, m * otherToState + thisTrans.getToState()));
+                            addTransition(s, new CompactTransition(otherInId, otherOutId, n * otherToState + thisTrans.getToState()));
                         else
                             break;
                         thisTransIdx++;
@@ -910,16 +916,45 @@ public class MutableCompactTransducer extends MutableTransducer {
             otherState++;
         }
 
-        start = m * iter.getStartState() + oldStart;
+        start = n * iter.getStartState() + oldStart;
 
         deterministic = false;
         minimal = false;
-        removeNonfunctionalStates();
+//        removeNonfunctionalStates(); // TODO: Why does this delete transitions between functional states??
     }
 
     @Override
-    public void subtract(Transducer other) {
-        // TODO: Implement
+    public void complement() {
+        // TODO: Does this make a difference?
+//        if (!deterministic)
+//            determinize();
+
+        // Make FST total, i.e. add transitions for all symbol pairs to each state
+        int trapState = addState(false);
+        for (int state = 0; state < transitions.size(); state++) {
+            Set<Long> existingTransitions = transitions.get(state).stream()
+                    .map(trans -> trans.getInternalRepresentation() & (GET_IN_SYM | GET_OUT_SYM))
+                    .collect(Collectors.toSet());
+            System.err.println("LUFI " + state + " " + StringUtils.join(existingTransitions, ','));
+            for (CompactTransition tr : transitions.get(state))
+                System.err.println("PUFI " + tr + " " + tr.getInternalRepresentation());
+            int idIdx = alphabet.identityId();
+            for (int inSym = 0; inSym < alphabet.size(); inSym++) {
+                if (inSym != idIdx) {
+                    for (int outSym = 0; outSym < alphabet.size(); outSym++) {
+                        if (outSym != idIdx) {
+                            long trans = CompactTransition.makeTransition(inSym, outSym, 0);
+                            System.err.println(trans);
+                            if (!existingTransitions.contains(trans))
+                                addTransition(state, inSym, outSym, trapState);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Flip state acceptance
+        accepting = accepting.stream().map(acc -> !acc).collect(Collectors.toList());
     }
 
     @Override

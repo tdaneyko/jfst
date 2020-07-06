@@ -18,7 +18,7 @@ public enum FstProducer {
 
         @Override
         public String unknown() {
-            return "@0@";
+            return "@_UNKNOWN_SYMBOL_@";
         }
 
         @Override
@@ -115,6 +115,8 @@ public enum FstProducer {
     public String convert(String s) {
         if (s.equals(epsilon()))
             return Alphabet.EPSILON_STRING;
+        else if (s.equals(unknown()))
+            return Alphabet.UNKNOWN_STRING;
         else if (s.equals(identity()))
             return Alphabet.UNKNOWN_IDENTITY_STRING;
         else if (s.equals(space()))

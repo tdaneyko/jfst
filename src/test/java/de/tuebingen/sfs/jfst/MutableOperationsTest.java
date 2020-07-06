@@ -7,11 +7,31 @@ import junit.framework.TestCase;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 
 public class MutableOperationsTest extends TestCase {
 
     private static final String TEST_DIR = "src/test/resources/";
+
+    public void testAddSymbol() throws IOException {
+        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable3.att")), FstProducer.HFST);
+
+        assertEquals(2, fst.nOfStates());
+        assertEquals(2, fst.nOfTransitions());
+        assertEquals(Collections.singleton("a"), fst.apply("a"));
+        assertEquals(Collections.emptySet(), fst.apply("b"));
+
+        fst.addSymbol("b");
+        fst.writeToATT(new File(TEST_DIR + "testAddSymbolOut.att"));
+
+        assertEquals(2, fst.nOfStates());
+        assertEquals(3, fst.nOfTransitions());
+        assertEquals(new HashSet<>(Arrays.asList("a", "b")), fst.apply("a"));
+        assertEquals(Collections.emptySet(), fst.apply("b"));
+    }
 
     public void testCopy() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
@@ -217,6 +237,22 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst.apply("gb"));
     }
 
+//    public void testComplement() throws IOException {
+//        MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
+//                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+//
+//        assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
+//        assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
+//        assertEquals(Collections.emptySet(), fst.apply("bg"));
+//
+//        fst.complement();
+//        fst.writeToATT(new File(TEST_DIR + "testComplementOut.att"));
+//
+//        assertEquals(Collections.emptySet(), fst.apply("bdg"));
+//        assertEquals(Collections.emptySet(), fst.apply("xxxefg"));
+//        assertEquals(Collections.emptySet(), fst.apply("bg"));
+//    }
+
     public void testConcatSameAlph() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
                 new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
@@ -290,25 +326,35 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst1.apply("бdг"));
     }
 
-//    public void testSubtract() throws IOException {
-//        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
-//                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
-//        MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
-//                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST);
-//
-//        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
-//        assertEquals(Collections.emptySet(), fst2.apply("bdg"));
-//        assertEquals(Collections.singleton("AD"), fst1.apply("ad"));
-//        assertEquals(fst1.apply("ad"), fst2.apply("ad"));
-//        assertEquals(Collections.singleton("C"), fst1.apply("c"));
-//        assertEquals(fst1.apply("c"), fst2.apply("c"));
-//
-//        fst1.subtract(fst2);
-//        fst1.writeToATT(new File(TEST_DIR + "testSubtractOut.att"));
-//
-//        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
-//        assertEquals(Collections.emptySet(), fst1.apply("ad"));
-//        assertEquals(Collections.emptySet(), fst1.apply("c"));
-//    }
+    public void testSubtract() throws IOException {
+        MutableCompactTransducer fst4 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable4.att")), FstProducer.HFST);
+        MutableCompactTransducer fst5 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable5.att")), FstProducer.HFST);
+
+        fst5.complement();
+        fst5.writeToATT(new File(TEST_DIR + "testComplementOut2.att"));
+        fst4.intersect(fst5);
+        fst4.writeToATT(new File(TEST_DIR + "testSubtractOut2.att"));
+
+        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+        MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST);
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.emptySet(), fst2.apply("bdg"));
+        assertEquals(Collections.singleton("AD"), fst1.apply("ad"));
+        assertEquals(fst1.apply("ad"), fst2.apply("ad"));
+        assertEquals(Collections.singleton("C"), fst1.apply("c"));
+        assertEquals(fst1.apply("c"), fst2.apply("c"));
+
+        fst1.subtract(fst2);
+        fst1.writeToATT(new File(TEST_DIR + "testSubtractOut.att"));
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.emptySet(), fst1.apply("ad"));
+        assertEquals(Collections.emptySet(), fst1.apply("c"));
+    }
 
 }

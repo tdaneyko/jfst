@@ -12,10 +12,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import static de.tuebingen.sfs.jfst.symbol.Alphabet.UNKNOWN_STRING;
+
 public abstract class ApplicableTransducer implements Transducer {
 
     private static final int MAX_SUFFIX = 100;
     private static final int MAX_INSERTIONS = 15;
+    private static final int MAX_OUTPUT = 100;
 
     public void writeToBinary(OutputStream out) throws IOException {
         JfstBinaryWriter.writeFST(out, this);
@@ -38,8 +41,12 @@ public abstract class ApplicableTransducer implements Transducer {
         return apply(in, null);
     }
 
-    public Set<String> apply(String in, int maxInsertions) {
-        return apply(in, maxInsertions, null);
+    public Set<String> apply(String in, int maxOutput) {
+        return apply(in, maxOutput, MAX_INSERTIONS, null);
+    }
+
+    public Set<String> apply(String in, int maxOutput, int maxInsertions) {
+        return apply(in, maxOutput, maxInsertions, null);
     }
 
     /**
@@ -49,14 +56,14 @@ public abstract class ApplicableTransducer implements Transducer {
      * @return The output strings matched to the input string by this transducer
      */
     public Set<String> apply(String in, Iterable<String> ignoreInInput) {
-        return apply(in, MAX_INSERTIONS, ignoreInInput);
+        return apply(in, MAX_OUTPUT, MAX_INSERTIONS, ignoreInInput);
     }
 
-    public Set<String> apply(String in, int maxInsertions, Iterable<String> ignoreInInput) {
-        return apply(in, 0, getStartState(), 0, maxInsertions, ignoreInInput);
+    public Set<String> apply(String in, int maxOutput, int maxInsertions, Iterable<String> ignoreInInput) {
+        return apply(in, 0, getStartState(), maxOutput, 0, maxInsertions, ignoreInInput);
     }
 
-    private Set<String> apply(String s, int strIdx, int statIdx, int ins, int maxIns, Iterable<String> ignoreInInput) {
+    private Set<String> apply(String s, int strIdx, int statIdx, int maxOut, int ins, int maxIns, Iterable<String> ignoreInInput) {
         // String has been consumed?
         boolean sFin = strIdx >= s.length();
 
@@ -75,7 +82,7 @@ public abstract class ApplicableTransducer implements Transducer {
                 Iterator<Transition> ignIter = getTransitionIterator(ign, statIdx);
                 while (ignIter.hasNext()) {
                     Transition trans = ignIter.next();
-                    Set<String> prev = apply(s, strIdx, trans.toState, ins, maxIns, ignoreInInput);
+                    Set<String> prev = apply(s, strIdx, trans.toState, maxOut, ins, maxIns, ignoreInInput);
                     if (isEpsilon(trans.outSym))
                         res.addAll(prev);
                     else {
@@ -92,12 +99,11 @@ public abstract class ApplicableTransducer implements Transducer {
             Iterator<Transition> epsIter = getTransitionIterator(Alphabet.EPSILON_STRING, statIdx);
             while (epsIter.hasNext()) {
                 Transition trans = epsIter.next();
-                Set<String> prev = apply(s, strIdx, trans.toState, ins + 1, maxIns, ignoreInInput);
+                Set<String> prev = apply(s, strIdx, trans.toState, maxOut, ins + 1, maxIns, ignoreInInput);
                 if (isEpsilon(trans.outSym))
-                    res.addAll(prev);
+                    addUntilFull(res, prev, "", maxOut);
                 else {
-                    for (String r : prev)
-                        res.add(trans.outSym + r);
+                    addUntilFull(res, prev, trans.outSym, maxOut);
                 }
             }
         }
@@ -110,12 +116,13 @@ public abstract class ApplicableTransducer implements Transducer {
                 Iterator<Transition> litIter = getTransitionIterator(pref, statIdx);
                 while (litIter.hasNext()) {
                     Transition trans = litIter.next();
-                    Set<String> prev = apply(s, strIdx + pref.length(), trans.toState, 0, maxIns, ignoreInInput);
-                    if (isEpsilon(trans.outSym))
-                        res.addAll(prev);
-                    else {
-                        for (String r : prev)
-                            res.add(trans.outSym + r);
+                    if (!trans.outSym.equals(UNKNOWN_STRING)) {
+                        Set<String> prev = apply(s, strIdx + pref.length(), trans.toState, maxOut, 0, maxIns, ignoreInInput);
+                        if (isEpsilon(trans.outSym))
+                            addUntilFull(res, prev, "", maxOut);
+                        else {
+                            addUntilFull(res, prev, trans.outSym, maxOut);
+                        }
                     }
                 }
             }
@@ -127,17 +134,17 @@ public abstract class ApplicableTransducer implements Transducer {
                 Iterator<Transition> idIter = getTransitionIterator(Alphabet.UNKNOWN_IDENTITY_STRING, statIdx);
                 while (idIter.hasNext()) {
                     Transition trans = idIter.next();
-                    Set<String> prev = apply(s, strIdx + 1, trans.toState, 0, maxIns, ignoreInInput);
-                    for (String r : prev)
-                        res.add(c + r);
+                    Set<String> prev = apply(s, strIdx + 1, trans.toState, maxOut, 0, maxIns, ignoreInInput);
+                    addUntilFull(res, prev, c + "", maxOut);
                 }
                 // Unknown - other
-                Iterator<Transition> unknIter = getTransitionIterator(Alphabet.UNKNOWN_STRING, statIdx);
+                Iterator<Transition> unknIter = getTransitionIterator(UNKNOWN_STRING, statIdx);
                 while (unknIter.hasNext()) {
                     Transition trans = unknIter.next();
-                    Set<String> prev = apply(s, strIdx + 1, trans.toState, 0, maxIns, ignoreInInput);
-                    for (String r : prev)
-                        res.add(trans.outSym + r);
+                    if (!trans.outSym.equals(UNKNOWN_STRING)) {
+                        Set<String> prev = apply(s, strIdx + 1, trans.toState, maxOut, 0, maxIns, ignoreInInput);
+                        addUntilFull(res, prev, trans.outSym, maxOut);
+                    }
                 }
             }
         }
@@ -147,6 +154,14 @@ public abstract class ApplicableTransducer implements Transducer {
 
     private boolean isEpsilon(String s) {
         return s != null && s.equals(Alphabet.EPSILON_STRING);
+    }
+
+    private static void addUntilFull(Set<String> target, Set<String> source, String prefix, int max) {
+        for (String s : source) {
+            if (target.size() >= max)
+                break;
+            target.add(prefix + s);
+        }
     }
 
     public Set<String> prefixSearch(String prefix) {
@@ -247,7 +262,7 @@ public abstract class ApplicableTransducer implements Transducer {
                         res.add(c + r);
                 }
                 // Unknown - other
-                Iterator<Transition> unknIter = getTransitionIterator(Alphabet.UNKNOWN_STRING, statIdx);
+                Iterator<Transition> unknIter = getTransitionIterator(UNKNOWN_STRING, statIdx);
                 while (unknIter.hasNext()) {
                     Transition trans = unknIter.next();
                     Set<String> prev = prefixSearch(s, strIdx + 1, trans.toState, maxSuffix, ignoreInInput);
