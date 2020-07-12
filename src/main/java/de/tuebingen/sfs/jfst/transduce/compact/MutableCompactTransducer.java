@@ -161,6 +161,15 @@ public class MutableCompactTransducer extends MutableTransducer {
         super.addEpsilonTransition(from, to);
     }
 
+    private boolean isEpsilonTransition(CompactTransition transition) {
+        return alphabet.epsilon(transition.getInSym()) && alphabet.epsilon(transition.getOutSym());
+    }
+
+    private boolean isEpsilonTransition(long transition) {
+        return alphabet.epsilon(CompactTransition.inIdFromTransition(transition))
+                && alphabet.epsilon(CompactTransition.outIdFromTransition(transition));
+    }
+
     /**
      * Parse a file in AT&amp;T format into a MutableCompactTransducer.
      * @param in AT&amp;T file
@@ -946,7 +955,7 @@ public class MutableCompactTransducer extends MutableTransducer {
                         if (outSym != idIdx) {
                             long trans = CompactTransition.makeTransition(inSym, outSym, 0);
 //                            System.err.println(trans);
-                            if (!existingTransitions.contains(trans))
+                            if (!existingTransitions.contains(trans) && !isEpsilonTransition(trans))
                                 addTransition(state, inSym, outSym, trapState);
                         }
                     }
@@ -956,6 +965,12 @@ public class MutableCompactTransducer extends MutableTransducer {
 
         // Flip state acceptance
         accepting = accepting.stream().map(acc -> !acc).collect(Collectors.toList());
+    }
+
+    @Override
+    public void subtract(Transducer other) {
+//        this.determinize();
+        super.subtract(other);
     }
 
     @Override
