@@ -549,7 +549,8 @@ public class MutableCompactTransducer extends MutableTransducer {
     private void removeStatesExcept(Set<Integer> statesToKeep) {
         int[] stateTransformations = new int[nOfStates()];
         int currentOffset = 0;
-        for (int s = 0; s < nOfStates(); s++) {
+        int n = nOfStates();
+        for (int s = 0; s < n; s++) {
             if (statesToKeep.contains(s))
                 stateTransformations[s] = s - currentOffset;
             else {
@@ -920,7 +921,7 @@ public class MutableCompactTransducer extends MutableTransducer {
 
         deterministic = false;
         minimal = false;
-//        removeNonfunctionalStates(); // TODO: Why does this delete transitions between functional states??
+        removeNonfunctionalStates();
     }
 
     @Override
@@ -935,16 +936,16 @@ public class MutableCompactTransducer extends MutableTransducer {
             Set<Long> existingTransitions = transitions.get(state).stream()
                     .map(trans -> trans.getInternalRepresentation() & (GET_IN_SYM | GET_OUT_SYM))
                     .collect(Collectors.toSet());
-            System.err.println("LUFI " + state + " " + StringUtils.join(existingTransitions, ','));
-            for (CompactTransition tr : transitions.get(state))
-                System.err.println("PUFI " + tr + " " + tr.getInternalRepresentation());
+//            System.err.println("LUFI " + state + " " + StringUtils.join(existingTransitions, ','));
+//            for (CompactTransition tr : transitions.get(state))
+//                System.err.println("PUFI " + tr + " " + tr.getInternalRepresentation());
             int idIdx = alphabet.identityId();
             for (int inSym = 0; inSym < alphabet.size(); inSym++) {
                 if (inSym != idIdx) {
                     for (int outSym = 0; outSym < alphabet.size(); outSym++) {
                         if (outSym != idIdx) {
                             long trans = CompactTransition.makeTransition(inSym, outSym, 0);
-                            System.err.println(trans);
+//                            System.err.println(trans);
                             if (!existingTransitions.contains(trans))
                                 addTransition(state, inSym, outSym, trapState);
                         }
