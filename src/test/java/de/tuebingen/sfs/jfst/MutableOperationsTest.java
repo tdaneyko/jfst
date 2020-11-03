@@ -338,6 +338,23 @@ public class MutableOperationsTest extends TestCase {
         fst4.subtract(fst5);
         fst4.writeToATT(new File(TEST_DIR + "testSubtractOut2.att"));
 
+        MutableCompactTransducer fst6 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable6.att")), FstProducer.HFST_ATT);
+        MutableCompactTransducer fst7 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable7.att")), FstProducer.HFST_ATT);
+
+        assertEquals(Collections.singleton("ac"), fst6.apply("ac"));
+        assertEquals(Collections.singleton("ac"), fst7.apply("ac"));
+        assertEquals(Collections.singleton("abc"), fst6.apply("abc"));
+        assertEquals(Collections.emptySet(), fst7.apply("abc"));
+        assertEquals(Collections.singleton("de"), fst6.apply("de"));
+//        assertEquals(Collections.singleton("DH"), fst7.apply("dh"));
+
+//        fst7.complement();
+//        fst7.writeToATT(new File(TEST_DIR + "testComplementOut3.att"));
+        fst6.subtract(fst7);
+        fst6.writeToATT(new File(TEST_DIR + "testSubtractOut3.att"));
+
         assertEquals(3, fst4.nOfStates());
         assertEquals(2, fst4.nOfTransitions());
         assertEquals(Collections.singleton("b"), fst4.apply("a"));

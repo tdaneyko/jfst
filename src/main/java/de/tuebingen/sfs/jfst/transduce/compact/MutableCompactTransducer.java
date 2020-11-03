@@ -870,16 +870,20 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void intersect(Transducer other) {
+        // TODO: Why does this make the intersection test fail?
+//        if (!deterministic)
+//            determinize();
+
         MutableTransducer otherMut = other.getMutableCopy();
         for (String sym : alphabet.getSymbols())
             otherMut.addSymbol(sym);
 
-        Alphabet otherAlph = other.getAlphabet();
+        Alphabet otherAlph = otherMut.getAlphabet();
         for (String sym : otherAlph.getSymbols())
             this.addSymbol(sym);
 
         int n = nOfStates();
-        int m = other.nOfStates();
+        int m = otherMut.nOfStates();
         int oldStart = start;
         List<List<CompactTransition>> oldTrans = transitions;
         List<Boolean> oldAcc = accepting;
@@ -889,7 +893,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         for (int s = 0; s < m * n; s++)
             addState();
 
-        StateIterator iter = other.iter();
+        StateIterator iter = otherMut.iter();
         int otherState = 0;
         while (iter.hasNextState()) {
             iter.nextState();
