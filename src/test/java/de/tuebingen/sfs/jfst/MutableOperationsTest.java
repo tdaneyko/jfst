@@ -327,39 +327,7 @@ public class MutableOperationsTest extends TestCase {
     }
 
     public void testSubtract() throws IOException {
-        MutableCompactTransducer fst4 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable4.att")), FstProducer.HFST_ATT);
-        MutableCompactTransducer fst5 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable5.att")), FstProducer.HFST_ATT);
-
-        assertEquals(Collections.singleton("b"), fst4.apply("a"));
-        assertEquals(Collections.singleton("d"), fst4.apply("c"));
-
-        fst4.subtract(fst5);
-        fst4.writeToATT(new File(TEST_DIR + "testSubtractOut2.att"));
-
-        MutableCompactTransducer fst6 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable6.att")), FstProducer.HFST_ATT);
-        MutableCompactTransducer fst7 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable7.att")), FstProducer.HFST_ATT);
-
-        assertEquals(Collections.singleton("ac"), fst6.apply("ac"));
-        assertEquals(Collections.singleton("ac"), fst7.apply("ac"));
-        assertEquals(Collections.singleton("abc"), fst6.apply("abc"));
-        assertEquals(Collections.emptySet(), fst7.apply("abc"));
-        assertEquals(Collections.singleton("de"), fst6.apply("de"));
-//        assertEquals(Collections.singleton("DH"), fst7.apply("dh"));
-
-//        fst7.complement();
-//        fst7.writeToATT(new File(TEST_DIR + "testComplementOut3.att"));
-        fst6.subtract(fst7);
-        fst6.writeToATT(new File(TEST_DIR + "testSubtractOut3.att"));
-
-        assertEquals(3, fst4.nOfStates());
-        assertEquals(2, fst4.nOfTransitions());
-        assertEquals(Collections.singleton("b"), fst4.apply("a"));
-        assertEquals(Collections.emptySet(), fst4.apply("c"));
-
+        // Test pair 1
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
                 new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
         MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
@@ -380,6 +348,43 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
         assertEquals(Collections.emptySet(), fst1.apply("ad"));
         assertEquals(Collections.emptySet(), fst1.apply("c"));
+
+        // Test pair 2
+        MutableCompactTransducer fst4 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable4.att")), FstProducer.HFST_ATT);
+        MutableCompactTransducer fst5 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable5.att")), FstProducer.HFST_ATT);
+
+        assertEquals(Collections.singleton("b"), fst4.apply("a"));
+        assertEquals(Collections.singleton("d"), fst4.apply("c"));
+
+        fst4.subtract(fst5);
+        fst4.writeToATT(new File(TEST_DIR + "testSubtractOut2.att"));
+
+        assertEquals(3, fst4.nOfStates());
+        assertEquals(2, fst4.nOfTransitions());
+        assertEquals(Collections.singleton("b"), fst4.apply("a"));
+        assertEquals(Collections.emptySet(), fst4.apply("c"));
+
+        // Test pair 3
+        MutableCompactTransducer fst6 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable6.att")), FstProducer.HFST_ATT);
+        MutableCompactTransducer fst7 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable7.att")), FstProducer.HFST_ATT);
+
+        assertEquals(Collections.singleton("ac"), fst6.apply("ac"));
+        assertEquals(Collections.singleton("ac"), fst7.apply("ac"));
+        assertEquals(Collections.singleton("abc"), fst6.apply("abc"));
+        assertEquals(Collections.emptySet(), fst7.apply("abc"));
+        assertEquals(Collections.singleton("de"), fst6.apply("de"));
+        assertEquals(Collections.singleton("dh"), fst7.apply("dh"));
+
+        fst6.subtract(fst7);
+        fst6.writeToATT(new File(TEST_DIR + "testSubtractOut3.att"));
+
+        assertEquals(Collections.emptySet(), fst6.apply("ac"));
+        assertEquals(Collections.singleton("abc"), fst6.apply("abc"));
+        assertEquals(Collections.singleton("de"), fst6.apply("de"));
     }
 
 }

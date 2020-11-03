@@ -589,8 +589,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         if (minimal)
             return;
 
-        if (!deterministic)
-            this.determinize();
+        this.determinize();
         removeNonfunctionalStates();
 
         Set<Set<Integer>> equivSets = hopcroftAlgorithm();
@@ -870,10 +869,6 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void intersect(Transducer other) {
-        // TODO: Why does this make the intersection test fail?
-//        if (!deterministic)
-//            determinize();
-
         MutableTransducer otherMut = other.getMutableCopy();
         for (String sym : alphabet.getSymbols())
             otherMut.addSymbol(sym);
@@ -881,6 +876,9 @@ public class MutableCompactTransducer extends MutableTransducer {
         Alphabet otherAlph = otherMut.getAlphabet();
         for (String sym : otherAlph.getSymbols())
             this.addSymbol(sym);
+
+        determinize();
+        otherMut.determinize();
 
         int n = nOfStates();
         int m = otherMut.nOfStates();
@@ -906,7 +904,6 @@ public class MutableCompactTransducer extends MutableTransducer {
                 String otherInSym = otherAlph.getSymbol(iter.inId());
                 String otherOutSym = otherAlph.getSymbol(iter.outId());
                 int otherToState = iter.toId();
-//                System.err.println(otherState + " --(" + otherInSym + ":" + otherOutSym + ")-> " + otherToState);
                 int otherInId = alphabet.getId(otherInSym);
                 int otherOutId = alphabet.getId(otherOutSym);
                 for (int thisState = 0; thisState < n; thisState++) {
@@ -938,9 +935,7 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void complement() {
-        // TODO: Does this make a difference?
-//        if (!deterministic)
-//            determinize();
+        determinize();
 
         // Make FST total, i.e. add transitions for all symbol pairs to each state
         int trapState = addState(false);
@@ -948,16 +943,12 @@ public class MutableCompactTransducer extends MutableTransducer {
             Set<Long> existingTransitions = transitions.get(state).stream()
                     .map(trans -> trans.getInternalRepresentation() & (GET_IN_SYM | GET_OUT_SYM))
                     .collect(Collectors.toSet());
-//            System.err.println("LUFI " + state + " " + StringUtils.join(existingTransitions, ','));
-//            for (CompactTransition tr : transitions.get(state))
-//                System.err.println("PUFI " + tr + " " + tr.getInternalRepresentation());
             int idIdx = alphabet.identityId();
             for (int inSym = 0; inSym < alphabet.size(); inSym++) {
                 if (inSym != idIdx) {
                     for (int outSym = 0; outSym < alphabet.size(); outSym++) {
                         if (outSym != idIdx) {
                             long trans = CompactTransition.makeTransition(inSym, outSym, 0);
-//                            System.err.println(trans);
                             if (!existingTransitions.contains(trans) && !isEpsilonTransition(trans))
                                 addTransition(state, inSym, outSym, trapState);
                         }
@@ -972,7 +963,6 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void subtract(Transducer other) {
-//        this.determinize();
         super.subtract(other);
     }
 
