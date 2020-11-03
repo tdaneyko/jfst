@@ -25,7 +25,7 @@ public class ApplicationAndIOTest extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
-        hfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFST.att")), FstProducer.HFST);
+        hfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFST.att")), FstProducer.HFST_ATT);
         sfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testSFST.att")), FstProducer.SFST);
 
         hfstTestSet = new HashMap<>();
@@ -76,7 +76,7 @@ public class ApplicationAndIOTest extends TestCase {
     }
 
     public void testSimple() throws FileNotFoundException {
-        MutableCompactTransducer test = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "test.att")), FstProducer.HFST);
+        MutableCompactTransducer test = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "test.att")), FstProducer.HFST_ATT);
 
         Set<String> expected = new HashSet<>();
         expected.add("bbbbby");
@@ -84,35 +84,35 @@ public class ApplicationAndIOTest extends TestCase {
     }
 
     public void testMalScript2AsciiSmall() throws FileNotFoundException {
-        CompactTransducer fst = CompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "mal-small.att")), FstProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "mal-small.att")), FstProducer.HFST_ATT);
         Set<String> expected = new HashSet<>();
         expected.add("vaaka");
         assertEquals(expected, fst.apply("വാക"));
     }
 
     public void testMalScript2AsciiSmallFromBinary() {
-        CompactTransducer fst = CompactTransducer.readFromBinary("/mal-small.hfst", FstProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromBinary("/mal-small.hfst", FstProducer.HFST_INTERNAL);
         Set<String> expected = new HashSet<>();
         expected.add("vaaka");
         assertEquals(expected, fst.apply("വാക"));
     }
 
     public void testMalScript2Ascii() throws FileNotFoundException {
-        CompactTransducer fst = CompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "mal-orth2asciiprnc.att")), FstProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "mal-orth2asciiprnc.att")), FstProducer.HFST_ATT);
         Set<String> expected = new HashSet<>();
         expected.add("vaa;n;nikkuka");
-        assertEquals(expected, fst.apply("വാങ്ങിക്കുക")); //TODO
+        assertEquals(expected, fst.apply("വാങ്ങിക്കുക"));
     }
 
     public void testMalScript2AsciiFromBinary() {
-        CompactTransducer fst = CompactTransducer.readFromBinary("/mal-orth2asciiprnc.hfst", FstProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromBinary("/mal-orth2asciiprnc.hfst", FstProducer.HFST_INTERNAL);
         Set<String> expected = new HashSet<>();
         expected.add("vaa;n;nikkuka");
-        assertEquals(expected, fst.apply("വാങ്ങിക്കുക")); //TODO
+        assertEquals(expected, fst.apply("വാങ്ങിക്കുക"));
     }
 
     public void testEusScript2IpaFromBinary() {
-        CompactTransducer fst = CompactTransducer.readFromBinary("/eus.hfst", FstProducer.HFST);
+        CompactTransducer fst = CompactTransducer.readFromBinary("/eus.hfst", FstProducer.HFST_INTERNAL);
         Set<String> expected = new HashSet<>();
         expected.add("et͡ʃe");
         assertEquals(expected, fst.apply("etxe"));
@@ -157,7 +157,7 @@ public class ApplicationAndIOTest extends TestCase {
         CompactTransducer sfst2 = CompactTransducer.readFromBinary("/testSFST.jfst");
         compare(sfst, sfst2, sfstTestSet);
 
-        MutableCompactTransducer hfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFST.att")), FstProducer.HFST);
+        MutableCompactTransducer hfst = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFST.att")), FstProducer.HFST_ATT);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(new File(TEST_DIR + "testHFST.jfst")))) {
             hfst.writeToBinary(out);
         } catch (IOException e) {
@@ -178,7 +178,7 @@ public class ApplicationAndIOTest extends TestCase {
     public void testInverse() {
         try {
             MutableCompactTransducer sfst2 = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testSFSTinv.att")), FstProducer.SFST);
-            MutableCompactTransducer hfst2 = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFSTinv.att")), FstProducer.HFST);
+            MutableCompactTransducer hfst2 = MutableCompactTransducer.readFromATT(new FileInputStream(new File(TEST_DIR + "testHFSTinv.att")), FstProducer.HFST_ATT);
             MutableCompactTransducer sfst3 = MutableCompactTransducer.readFromBinary("/testSFST.jfst", true);
             MutableCompactTransducer hfst3 = MutableCompactTransducer.readFromBinary("/testHFST.jfst", true);
             CompactTransducer sfst4 = CompactTransducer.readFromBinary("/testSFST.jfst", true);

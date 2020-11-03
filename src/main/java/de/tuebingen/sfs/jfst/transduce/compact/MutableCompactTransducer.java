@@ -5,7 +5,6 @@ import de.tuebingen.sfs.jfst.io.*;
 import de.tuebingen.sfs.jfst.transduce.MutableTransducer;
 import de.tuebingen.sfs.jfst.transduce.StateIterator;
 import de.tuebingen.sfs.jfst.transduce.Transducer;
-import de.tuebingen.sfs.util.string.StringUtils;
 
 import java.io.InputStream;
 import java.util.*;
@@ -218,7 +217,7 @@ public class MutableCompactTransducer extends MutableTransducer {
      * @return The Transducer specified by the file
      */
     public static MutableCompactTransducer readFromBinary(String fileName, boolean inverse) {
-        FstProducer producer = (fileName.endsWith(".hfst")) ? FstProducer.HFST : FstProducer.JFST;
+        FstProducer producer = (fileName.endsWith(".hfst")) ? FstProducer.HFST_INTERNAL : FstProducer.JFST;
         return readFromBinary(fileName, producer, inverse);
     }
 

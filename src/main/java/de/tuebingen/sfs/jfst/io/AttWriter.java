@@ -25,7 +25,7 @@ public class AttWriter {
      * @throws IOException
      */
     public static void writeFST(File file, StateIterator states) throws IOException {
-        writeFST(file, states, FstProducer.HFST);
+        writeFST(file, states, FstProducer.HFST_ATT);
     }
 
     /**

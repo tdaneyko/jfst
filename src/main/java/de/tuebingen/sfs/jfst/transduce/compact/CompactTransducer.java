@@ -116,7 +116,7 @@ public class CompactTransducer extends ApplicableTransducer {
      * @return The Transducer specified by the file
      */
     public static CompactTransducer readFromBinary(String fileName, boolean inverse) {
-        FstProducer producer = (fileName.endsWith(".hfst")) ? FstProducer.HFST : FstProducer.JFST;
+        FstProducer producer = (fileName.endsWith(".hfst")) ? FstProducer.HFST_INTERNAL : FstProducer.JFST;
         return readFromBinary(fileName, producer, inverse);
     }
 

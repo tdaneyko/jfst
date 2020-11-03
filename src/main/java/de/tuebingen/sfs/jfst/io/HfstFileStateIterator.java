@@ -145,13 +145,13 @@ public class HfstFileStateIterator implements FileStateIterator {
             skip += 12 + len;
 //            System.err.println(symbol + " " + id);
 
-            if (symbol.equals(FstProducer.HFST.identity())) {
+            if (symbol.equals(FstProducer.HFST_INTERNAL.identity())) {
                 symbol = Alphabet.UNKNOWN_IDENTITY_STRING;
             }
-            else if (symbol.equals(FstProducer.HFST.unknown())) {
+            else if (symbol.equals(FstProducer.HFST_INTERNAL.unknown())) {
                 symbol = Alphabet.UNKNOWN_STRING;
             }
-            else if (symbol.equals(FstProducer.HFST.epsilon())) {
+            else if (symbol.equals(FstProducer.HFST_INTERNAL.epsilon())) {
                 symbol = Alphabet.EPSILON_STRING;
             }
 

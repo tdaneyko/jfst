@@ -17,7 +17,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testAddSymbol() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable3.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable3.att")), FstProducer.HFST_ATT);
 
         assertEquals(2, fst.nOfStates());
         assertEquals(2, fst.nOfTransitions());
@@ -35,7 +35,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testCopy() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(10, fst1.nOfStates());
         assertEquals(14, fst1.nOfTransitions());
@@ -55,7 +55,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testRemoveEpsilons() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(10, fst.nOfStates());
         assertEquals(14, fst.nOfTransitions());
@@ -76,7 +76,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testDeterminize() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(10, fst.nOfStates());
         assertEquals(14, fst.nOfTransitions());
@@ -96,7 +96,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testRemoveUnreachableStates() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         int s = fst.addState();
         fst.addTransition(s, "b", "B", 0);
@@ -118,7 +118,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testRemoveTraps() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         int s = fst.addState();
         fst.addTransition(0, "b", "B", s);
@@ -141,7 +141,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testMinimize() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(10, fst.nOfStates());
         assertEquals(14, fst.nOfTransitions());
@@ -161,7 +161,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testRepeat() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
@@ -177,7 +177,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testRepeatMin() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
@@ -194,7 +194,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testKleeneStar() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
@@ -209,7 +209,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testInverse() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
@@ -223,7 +223,7 @@ public class MutableOperationsTest extends TestCase {
 
     public void testReverse() throws IOException {
         MutableCompactTransducer fst = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("BDG"), fst.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst.apply("xxxefg"));
@@ -255,9 +255,9 @@ public class MutableOperationsTest extends TestCase {
 
     public void testConcatSameAlph() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
         MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST, true);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT, true);
 
         assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
@@ -273,9 +273,9 @@ public class MutableOperationsTest extends TestCase {
 
     public void testConcatDiffAlph() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
         MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST, true);
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST_ATT, true);
 
         assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
@@ -291,9 +291,9 @@ public class MutableOperationsTest extends TestCase {
 
     public void testUnion() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
         MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
@@ -309,9 +309,9 @@ public class MutableOperationsTest extends TestCase {
 
     public void testIntersection() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
         MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
         assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
@@ -328,9 +328,9 @@ public class MutableOperationsTest extends TestCase {
 
     public void testSubtract() throws IOException {
         MutableCompactTransducer fst4 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable4.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable4.att")), FstProducer.HFST_ATT);
         MutableCompactTransducer fst5 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable5.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable5.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("b"), fst4.apply("a"));
         assertEquals(Collections.singleton("d"), fst4.apply("c"));
@@ -344,9 +344,9 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst4.apply("c"));
 
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
         MutableCompactTransducer fst2 = MutableCompactTransducer.readFromATT(new FileInputStream(
-                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST);
+                new File(TEST_DIR + "testMutable2.att")), FstProducer.HFST_ATT);
 
         assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
         assertEquals(Collections.emptySet(), fst2.apply("bdg"));

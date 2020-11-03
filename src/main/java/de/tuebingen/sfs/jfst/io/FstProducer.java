@@ -10,7 +10,28 @@ public enum FstProducer {
     /**
      * Marks files produced by the Helsinki Finite-State Toolkit.
      */
-    HFST {
+    HFST_INTERNAL {
+        @Override
+        public String epsilon() {
+            return "@_EPSILON_SYMBOL_@";
+        }
+
+        @Override
+        public String unknown() {
+            return "@_UNKNOWN_SYMBOL_@";
+        }
+
+        @Override
+        public String identity() {
+            return "@_IDENTITY_SYMBOL_@";
+        }
+
+        @Override
+        public String space() {
+            return "@_SPACE_@";
+        }
+    },
+    HFST_ATT {
         @Override
         public String epsilon() {
             return "@0@";
