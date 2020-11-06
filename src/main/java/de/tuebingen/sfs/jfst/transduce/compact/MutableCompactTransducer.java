@@ -448,6 +448,20 @@ public class MutableCompactTransducer extends MutableTransducer {
     }
 
     @Override
+    public void projectUp() {
+        for (List<CompactTransition> stateTrans : transitions)
+            for (CompactTransition trans : stateTrans)
+                trans.setOutSym(trans.getInSym());
+    }
+
+    @Override
+    public void projectDown() {
+        for (List<CompactTransition> stateTrans : transitions)
+            for (CompactTransition trans : stateTrans)
+                trans.setInSym(trans.getOutSym());
+    }
+
+    @Override
     public void determinize() {
         if (deterministic)
             return;
@@ -862,10 +876,129 @@ public class MutableCompactTransducer extends MutableTransducer {
         mergeFlags(other);
     }
 
-    @Override
-    public void priorityUnion(Transducer other) {
-        // TODO: Implement
+    private void virtualPriorityUnion(Transducer other) {
+//        // https://www.researchgate.net/publication/270878393_Virtual_operations_on_virtual_networks_The_priority_union
+//        int[] otherIdsToNew = mergeAlphabets(other.getAlphabet());
+//
+//        int n = nOfStates() + 1;
+//        int m = other.nOfStates() + 1;
+//
+//        // Keep old states and transitions of type B
+//
+//        // Collect input sides for all states
+//        List<Set<Integer>> inSyms = new ArrayList<>();
+//        for (int s = 0; s < nOfStates(); s++)
+//            inSyms.add(transitions.get(s)
+//                    .stream()
+//                    .map(CompactTransition::getInSym)
+//                    .collect(Collectors.toSet()));
+//
+//        // Create new start state
+//        int oldStart = start;
+//        start = addState();  // == n-1
+//        // this is the idx of FST1's dummy state, so keep it non-accepting until the end
+//
+//        for (int s = start + 1; s < n * m; s++)
+//            addState();
+//
+//        // State (s1,s2) == s1 + n * s2
+//        // s1 == (n-1)  ==>  dummy state
+//        // s2 == 0  ==>  dummy state
+//        StateIterator iter = other.iter();
+//        int otherStart = iter.getStartState();
+//        int otherState = 0;
+//        while (iter.hasNextState()) {
+//            iter.nextState();
+//
+//            for (int thisState = 0; thisState < n; thisState++)
+//                setAccepting(thisState + n * otherState, !isAccepting(thisState) && iter.accepting());
+//
+//            while (iter.hasNextTransition()) {
+//                iter.nextTransition();
+//                int otherInId = otherIdsToNew[iter.inId()];
+//                int otherOutId = otherIdsToNew[iter.outId()];
+//                int otherToState = iter.toId();
+//
+//                int statePair = start + n * otherState; // (,s2)
+//                int toStatePair = start + n * otherToState;
+//                // Add transition for state of type C
+//                addTransition(statePair, otherInId, otherOutId, toStatePair);
+//
+//                if (otherState == otherStart) {
+//                    Set<Integer> thisStartSyms = inSyms.get(oldStart);
+//                    if (thisStartSyms.contains(otherInId)) {
+//                        addTransition(start, otherInId, otherOutId, );
+//                    }
+//                }
+//            }
+//        }
     }
+
+//    @Override
+//    public void intersect(Transducer other) {
+//        MutableTransducer otherMut = other.getMutableCopy();
+//        for (String sym : alphabet.getSymbols())
+//            otherMut.addSymbol(sym);
+//
+//        Alphabet otherAlph = otherMut.getAlphabet();
+//        for (String sym : otherAlph.getSymbols())
+//            this.addSymbol(sym);
+//
+//        determinize();
+//        otherMut.determinize();
+//
+//        int n = nOfStates();
+//        int m = otherMut.nOfStates();
+//        int oldStart = start;
+//        List<List<CompactTransition>> oldTrans = transitions;
+//        List<Boolean> oldAcc = accepting;
+//        reset();
+//
+//        // n * m states needed
+//        for (int s = 0; s < m * n; s++)
+//            addState();
+//
+//        StateIterator iter = otherMut.iter();
+//        int otherState = 0;
+//        while (iter.hasNextState()) {
+//            iter.nextState();
+//
+//            for (int thisState = 0; thisState < n; thisState++)
+//                setAccepting(n * otherState + thisState, iter.accepting() && oldAcc.get(thisState));
+//
+//            while (iter.hasNextTransition()) {
+//                iter.nextTransition();
+//                String otherInSym = otherAlph.getSymbol(iter.inId());
+//                String otherOutSym = otherAlph.getSymbol(iter.outId());
+//                int otherToState = iter.toId();
+//                int otherInId = alphabet.getId(otherInSym);
+//                int otherOutId = alphabet.getId(otherOutSym);
+//                for (int thisState = 0; thisState < n; thisState++) {
+//                    int s = n * otherState + thisState;
+//                    List<CompactTransition> thisStateTrans = oldTrans.get(thisState);
+//                    int thisTransIdx = Collections.binarySearch(thisStateTrans,
+//                            CompactTransition.makeTransition(otherInId, otherOutId, 0));
+//                    if (thisTransIdx < 0)
+//                        thisTransIdx = -(thisTransIdx + 1);
+//                    while (thisTransIdx < thisStateTrans.size()) {
+//                        CompactTransition thisTrans = thisStateTrans.get(thisTransIdx);
+//                        if (thisTrans.getInSym() == otherInId && thisTrans.getOutSym() == otherOutId)
+//                            addTransition(s, new CompactTransition(otherInId, otherOutId, n * otherToState + thisTrans.getToState()));
+//                        else
+//                            break;
+//                        thisTransIdx++;
+//                    }
+//                }
+//            }
+//            otherState++;
+//        }
+//
+//        start = n * iter.getStartState() + oldStart;
+//
+//        deterministic = false;
+//        minimal = false;
+//        removeNonfunctionalStates();
+//    }
 
     @Override
     public void intersect(Transducer other) {
@@ -880,57 +1013,82 @@ public class MutableCompactTransducer extends MutableTransducer {
         determinize();
         otherMut.determinize();
 
-        int n = nOfStates();
-        int m = otherMut.nOfStates();
-        int oldStart = start;
-        List<List<CompactTransition>> oldTrans = transitions;
-        List<Boolean> oldAcc = accepting;
-        reset();
+        CrossproductIterator iter = zip(otherMut);
+//        while (iter.hasNextStatePair()) {
+//            iter.nextStatePair();
+//            System.err.println(iter.getThisState() + " " + iter.getOtherState());
+//
+//            setAccepting(iter.getJoinedState(), iter.thisAccepting() && iter.otherAccepting());
 
-        // n * m states needed
-        for (int s = 0; s < m * n; s++)
-            addState();
+            while (iter.hasNextTransitionPair()) {
+                iter.nextTransitionPair();
+                System.err.println(iter.getThisState() + " " + iter.getOtherState());
+                setAccepting(iter.getJoinedState(), iter.thisAccepting() && iter.otherAccepting());
+                System.err.println(alphabet.getSymbol(iter.getThisInId())
+                        + " " + alphabet.getSymbol(iter.getThisOutId()) + " " + iter.getThisToState()
+                        + "\t" + alphabet.getSymbol(iter.getOtherInId())
+                        + " " + alphabet.getSymbol(iter.getOtherOutId()) + " " + iter.getOtherToState());
 
-        StateIterator iter = otherMut.iter();
-        int otherState = 0;
-        while (iter.hasNextState()) {
-            iter.nextState();
-
-            for (int thisState = 0; thisState < n; thisState++)
-                setAccepting(n * otherState + thisState, iter.accepting() && oldAcc.get(thisState));
-
-            while (iter.hasNextTransition()) {
-                iter.nextTransition();
-                String otherInSym = otherAlph.getSymbol(iter.inId());
-                String otherOutSym = otherAlph.getSymbol(iter.outId());
-                int otherToState = iter.toId();
-                int otherInId = alphabet.getId(otherInSym);
-                int otherOutId = alphabet.getId(otherOutSym);
-                for (int thisState = 0; thisState < n; thisState++) {
-                    int s = n * otherState + thisState;
-                    List<CompactTransition> thisStateTrans = oldTrans.get(thisState);
-                    int thisTransIdx = Collections.binarySearch(thisStateTrans,
-                            CompactTransition.makeTransition(otherInId, otherOutId, 0));
-                    if (thisTransIdx < 0)
-                        thisTransIdx = -(thisTransIdx + 1);
-                    while (thisTransIdx < thisStateTrans.size()) {
-                        CompactTransition thisTrans = thisStateTrans.get(thisTransIdx);
-                        if (thisTrans.getInSym() == otherInId && thisTrans.getOutSym() == otherOutId)
-                            addTransition(s, new CompactTransition(otherInId, otherOutId, n * otherToState + thisTrans.getToState()));
-                        else
-                            break;
-                        thisTransIdx++;
-                    }
-                }
+                if (iter.getThisInId() == iter.getOtherInId() && iter.getThisOutId() == iter.getOtherOutId())
+                    addTransition(iter.getJoinedState(), iter.getThisInId(), iter.getThisOutId(), iter.getJoinedToState());
             }
-            otherState++;
-        }
-
-        start = n * iter.getStartState() + oldStart;
+//        }
 
         deterministic = false;
         minimal = false;
         removeNonfunctionalStates();
+
+//        int n = nOfStates();
+//        int m = otherMut.nOfStates();
+//        int oldStart = start;
+//        List<List<CompactTransition>> oldTrans = transitions;
+//        List<Boolean> oldAcc = accepting;
+//        reset();
+//
+//        // n * m states needed
+//        for (int s = 0; s < m * n; s++)
+//            addState();
+//
+//        StateIterator iter = otherMut.iter();
+//        int otherState = 0;
+//        while (iter.hasNextState()) {
+//            iter.nextState();
+//
+//            for (int thisState = 0; thisState < n; thisState++)
+//                setAccepting(n * otherState + thisState, iter.accepting() && oldAcc.get(thisState));
+//
+//            while (iter.hasNextTransition()) {
+//                iter.nextTransition();
+//                String otherInSym = otherAlph.getSymbol(iter.inId());
+//                String otherOutSym = otherAlph.getSymbol(iter.outId());
+//                int otherToState = iter.toId();
+//                int otherInId = alphabet.getId(otherInSym);
+//                int otherOutId = alphabet.getId(otherOutSym);
+//                for (int thisState = 0; thisState < n; thisState++) {
+//                    int s = n * otherState + thisState;
+//                    List<CompactTransition> thisStateTrans = oldTrans.get(thisState);
+//                    int thisTransIdx = Collections.binarySearch(thisStateTrans,
+//                            CompactTransition.makeTransition(otherInId, otherOutId, 0));
+//                    if (thisTransIdx < 0)
+//                        thisTransIdx = -(thisTransIdx + 1);
+//                    while (thisTransIdx < thisStateTrans.size()) {
+//                        CompactTransition thisTrans = thisStateTrans.get(thisTransIdx);
+//                        if (thisTrans.getInSym() == otherInId && thisTrans.getOutSym() == otherOutId)
+//                            addTransition(s, new CompactTransition(otherInId, otherOutId, n * otherToState + thisTrans.getToState()));
+//                        else
+//                            break;
+//                        thisTransIdx++;
+//                    }
+//                }
+//            }
+//            otherState++;
+//        }
+//
+//        start = n * iter.getStartState() + oldStart;
+//
+//        deterministic = false;
+//        minimal = false;
+//        removeNonfunctionalStates();
     }
 
     @Override
@@ -1103,6 +1261,160 @@ public class MutableCompactTransducer extends MutableTransducer {
         @Override
         public int toId() {
             return stateTrans.get(t).getToState();
+        }
+    }
+
+    private CrossproductIterator zip(Transducer other) {
+        return new CrossproductIterator(other);
+    }
+
+    private class CrossproductIterator {
+
+        private final int n;
+        private final int m;
+
+        private int oldStart;
+        private List<List<CompactTransition>> oldTrans;
+        private List<Boolean> oldAcc;
+        private int thisState;
+        private int thisTransI;
+        private CompactTransition thisTrans = null;
+
+        private StateIterator otherIter;
+        private int otherState;
+
+        private int[] otherSymMap;
+
+        public CrossproductIterator(Transducer other) {
+            n = nOfStates();
+            m = other.nOfStates();
+            otherSymMap = mergeAlphabets(other.getAlphabet());
+
+            oldStart = start;
+            oldTrans = transitions;
+            oldAcc = accepting;
+            reset();
+
+            otherIter = other.iter();
+            otherIter.nextState();
+            otherState = 0;
+
+            // n * m states needed
+            for (int s = 0; s < m * n; s++)
+                addState();
+
+            start = oldStart + n * otherIter.getStartState();
+
+            thisState = 0;
+            otherIter.nextTransition();
+            thisTransI = -1;
+        }
+
+        public boolean hasNextStatePair() {
+            return thisState + 1 < n || otherIter.hasNextState();
+        }
+
+        public boolean hasNextTransitionPair() {
+            return hasNextStatePair() || thisTransI + 1 < oldTrans.get(thisState).size() || otherIter.hasNextTransition();
+        }
+
+        public void nextStatePair() {
+            if (thisState + 1 < n)
+                thisState++;
+            else {
+                otherIter.nextState();
+                otherState++;
+                thisState = 0;
+            }
+            thisTransI = oldTrans.get(thisState).size();
+            thisTrans = null;
+        }
+
+        public void nextTransitionPair() {
+            if (thisTransI + 1 < oldTrans.get(thisState).size())
+                thisTransI++;
+            else if (thisState + 1 < n) {
+                advanceThisState();
+            }
+            else if (otherIter.hasNextTransition()) {
+                otherIter.nextTransition();
+                thisTransI = 0;
+            }
+            else {
+                advanceOtherState();
+            }
+            thisTrans = oldTrans.get(thisState).get(thisTransI);
+        }
+
+        private void advanceThisState() {
+            while (thisTransI + 1 >= oldTrans.get(thisState).size() && thisState + 1 < n) {
+                thisState++;
+                thisTransI = -1;
+            }
+            thisTransI++;
+
+            if (thisState + 1 < n)
+                advanceOtherState();
+        }
+
+        private void advanceOtherState() {
+            while (!otherIter.hasNextTransition()) {
+                otherIter.nextState();
+                otherState++;
+            }
+            otherIter.nextTransition();
+
+            thisState = 0;
+            thisTransI = -1;
+            advanceThisState();
+        }
+
+        public int getThisState() {
+            return thisState;
+        }
+
+        public int getOtherState() {
+            return otherState;
+        }
+
+        public int getJoinedState() {
+            return thisState + n * otherState;
+        }
+
+        public boolean thisAccepting() {
+            return oldAcc.get(thisState);
+        }
+
+        public boolean otherAccepting() {
+            return otherIter.accepting();
+        }
+
+        public int getThisInId() {
+            return thisTrans.getInSym();
+        }
+
+        public int getOtherInId() {
+            return otherSymMap[otherIter.inId()];
+        }
+
+        public int getThisOutId() {
+            return thisTrans.getOutSym();
+        }
+
+        public int getOtherOutId() {
+            return otherSymMap[otherIter.outId()];
+        }
+
+        public int getThisToState() {
+            return thisTrans.getToState();
+        }
+
+        public int getOtherToState() {
+            return otherIter.toId();
+        }
+
+        public int getJoinedToState() {
+            return getThisToState() + n * getOtherToState();
         }
     }
 

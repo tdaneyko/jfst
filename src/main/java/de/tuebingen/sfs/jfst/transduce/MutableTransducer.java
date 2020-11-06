@@ -25,6 +25,10 @@ public abstract class MutableTransducer extends ApplicableTransducer {
         addTransition(from, Alphabet.EPSILON_STRING, Alphabet.EPSILON_STRING, to);
     }
 
+    public abstract void projectUp();
+
+    public abstract void projectDown();
+
     public abstract void determinize();
 
     public abstract void minimize();
@@ -53,7 +57,13 @@ public abstract class MutableTransducer extends ApplicableTransducer {
 
     public abstract void union(Transducer other);
 
-    public abstract void priorityUnion(Transducer other);
+    public void priorityUnion(Transducer other) {
+        MutableTransducer upper = this.getMutableCopy();
+        upper.projectUp();
+        upper.complement();
+        upper.compose(other);
+        union(upper);
+    }
 
     public abstract void intersect(Transducer other);
 
