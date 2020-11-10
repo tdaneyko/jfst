@@ -389,4 +389,29 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.singleton("de"), fst6.apply("de"));
     }
 
+    public void testComposition() throws IOException {
+        MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
+        MutableCompactTransducer fst8 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable8.att")), FstProducer.HFST_ATT);
+
+        assertEquals(Collections.singleton("BDG"), fst1.apply("bdg"));
+        assertEquals(Collections.singleton("XXXEFG"), fst1.apply("xxxefg"));
+        assertEquals(Collections.singleton("C"), fst1.apply("c"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+
+        assertEquals(Collections.singleton("βδγ"), fst8.apply("BDG"));
+        assertEquals(Collections.singleton("χχχεφγ"), fst8.apply("XXXEFG"));
+//        assertEquals(Collections.singleton("τσ"), fst8.apply("C"));
+        assertEquals(Collections.singleton("βγ"), fst8.apply("BG"));
+
+        fst1.compose(fst8);
+        fst1.writeToATT(new File(TEST_DIR + "testComposeOut.att"));
+
+        assertEquals(Collections.singleton("βδγ"), fst1.apply("bdg"));
+        assertEquals(Collections.singleton("χχχεφγ"), fst1.apply("xxxefg"));
+//        assertEquals(Collections.singleton("τσ"), fst1.apply("c"));
+        assertEquals(Collections.emptySet(), fst1.apply("bg"));
+    }
+
 }

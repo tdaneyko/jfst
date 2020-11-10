@@ -799,11 +799,11 @@ public class MutableCompactTransducer extends MutableTransducer {
         minimal = false;
     }
 
-    private int[] mergeAlphabets(Alphabet other) {
-        return mergeAlphabets(other, false);
+    private int[] addSymbolsOf(Alphabet other) {
+        return addSymbolsOf(other, false);
     }
 
-    private int[] mergeAlphabets(Alphabet other, boolean nullIfEquals) {
+    private int[] addSymbolsOf(Alphabet other, boolean nullIfEquals) {
         int[] otherIdsToNew = new int[other.size()];
 
         if (Arrays.equals(alphabet.getSymbols(), other.getSymbols())) {
@@ -823,7 +823,7 @@ public class MutableCompactTransducer extends MutableTransducer {
     }
 
     private int mergeTransducers(Transducer other) {
-        int[] alphTransformations = mergeAlphabets(other.getAlphabet(), true);
+        int[] alphTransformations = addSymbolsOf(other.getAlphabet(), true);
 
         if (alphTransformations == null && other instanceof MutableCompactTransducer) {
             MutableCompactTransducer otherMut = (MutableCompactTransducer) other;
@@ -945,97 +945,9 @@ public class MutableCompactTransducer extends MutableTransducer {
 //        }
     }
 
-//    @Override
-//    public void intersect(Transducer other) {
-//        MutableTransducer otherMut = other.getMutableCopy();
-//        for (String sym : alphabet.getSymbols())
-//            otherMut.addSymbol(sym);
-//
-//        Alphabet otherAlph = otherMut.getAlphabet();
-//        for (String sym : otherAlph.getSymbols())
-//            this.addSymbol(sym);
-//
-//        determinize();
-//        otherMut.determinize();
-//
-//        int n = nOfStates();
-//        int m = otherMut.nOfStates();
-//        int oldStart = start;
-//        List<List<CompactTransition>> oldTrans = transitions;
-//        List<Boolean> oldAcc = accepting;
-//        reset();
-//
-//        // n * m states needed
-//        for (int s = 0; s < m * n; s++)
-//            addState();
-//
-//        StateIterator iter = otherMut.iter();
-//        int otherState = 0;
-//        while (iter.hasNextState()) {
-//            iter.nextState();
-//
-//            for (int thisState = 0; thisState < n; thisState++)
-//                setAccepting(n * otherState + thisState, iter.accepting() && oldAcc.get(thisState));
-//
-//            while (iter.hasNextTransition()) {
-//                iter.nextTransition();
-//                String otherInSym = otherAlph.getSymbol(iter.inId());
-//                String otherOutSym = otherAlph.getSymbol(iter.outId());
-//                int otherToState = iter.toId();
-//                int otherInId = alphabet.getId(otherInSym);
-//                int otherOutId = alphabet.getId(otherOutSym);
-//                for (int thisState = 0; thisState < n; thisState++) {
-//                    int s = n * otherState + thisState;
-//                    List<CompactTransition> thisStateTrans = oldTrans.get(thisState);
-//                    int thisTransIdx = Collections.binarySearch(thisStateTrans,
-//                            CompactTransition.makeTransition(otherInId, otherOutId, 0));
-//                    if (thisTransIdx < 0)
-//                        thisTransIdx = -(thisTransIdx + 1);
-//                    while (thisTransIdx < thisStateTrans.size()) {
-//                        CompactTransition thisTrans = thisStateTrans.get(thisTransIdx);
-//                        if (thisTrans.getInSym() == otherInId && thisTrans.getOutSym() == otherOutId)
-//                            addTransition(s, new CompactTransition(otherInId, otherOutId, n * otherToState + thisTrans.getToState()));
-//                        else
-//                            break;
-//                        thisTransIdx++;
-//                    }
-//                }
-//            }
-//            otherState++;
-//        }
-//
-//        start = n * iter.getStartState() + oldStart;
-//
-//        deterministic = false;
-//        minimal = false;
-//        removeNonfunctionalStates();
-//    }
-
     @Override
     public void intersect(Transducer other) {
-        MutableTransducer otherMut = other.getMutableCopy();
-        for (String sym : alphabet.getSymbols())
-            otherMut.addSymbol(sym);
-
-        Alphabet otherAlph = otherMut.getAlphabet();
-        for (String sym : otherAlph.getSymbols())
-            this.addSymbol(sym);
-
-        determinize();
-        otherMut.determinize();
-
-        CrossproductIterator iter = zip(otherMut);
-        while (iter.advance()) {
-            if (iter.getThisInId() == iter.getOtherInId() && iter.getThisOutId() == iter.getOtherOutId())
-                addTransition(iter.getJoinedState(), iter.getThisInId(), iter.getThisOutId(), iter.getJoinedToState());
-        }
-
-        for (int s = 0; s < nOfStates(); s++)
-            setAccepting(s, iter.thisAccepting(iter.getThisState(s)) && iter.otherAccepting(iter.getOtherState(s)));
-
-        deterministic = false;
-        minimal = false;
-        removeNonfunctionalStates();
+        combine(other, CombinationType.INTERSECT);
     }
 
     @Override
@@ -1068,7 +980,36 @@ public class MutableCompactTransducer extends MutableTransducer {
 
     @Override
     public void compose(Transducer other) {
-        // TODO: Implement
+        combine(other, CombinationType.COMPOSE);
+    }
+
+    private enum CombinationType { INTERSECT, COMPOSE }
+
+    private void combine(Transducer other, CombinationType type) {
+        MutableTransducer otherMut = other.getMutableCopy();
+
+        for (String sym : alphabet.getSymbols())
+            otherMut.addSymbol(sym);
+
+        determinize();
+        otherMut.determinize();
+
+        CrossproductIterator iter = zip(otherMut);
+        while (iter.advance()) {
+            if (type == CombinationType.INTERSECT
+                    && iter.getThisInId() == iter.getOtherInId() && iter.getThisOutId() == iter.getOtherOutId())
+                addTransition(iter.getJoinedState(), iter.getThisInId(), iter.getThisOutId(), iter.getJoinedToState());
+            else if (type == CombinationType.COMPOSE
+                    && iter.getThisOutId() == iter.getOtherInId())
+                addTransition(iter.getJoinedState(), iter.getThisInId(), iter.getOtherOutId(), iter.getJoinedToState());
+        }
+
+        for (int s = 0; s < nOfStates(); s++)
+            setAccepting(s, iter.thisAccepting(iter.getThisState(s)) && iter.otherAccepting(iter.getOtherState(s)));
+
+        deterministic = false;
+        minimal = false;
+        removeNonfunctionalStates();
     }
 
     private class TransitionIterator implements Iterator<Transition> {
@@ -1231,7 +1172,7 @@ public class MutableCompactTransducer extends MutableTransducer {
         public CrossproductIterator(Transducer other) {
             n = nOfStates();
             m = other.nOfStates();
-            otherSymMap = mergeAlphabets(other.getAlphabet());
+            otherSymMap = addSymbolsOf(other.getAlphabet());
 
             oldStart = start;
             oldTrans = transitions;
