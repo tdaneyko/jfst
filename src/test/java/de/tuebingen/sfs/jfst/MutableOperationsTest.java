@@ -358,7 +358,9 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.singleton("b"), fst4.apply("a"));
         assertEquals(Collections.singleton("d"), fst4.apply("c"));
 
-        fst4.subtract(fst5);
+        fst5.complement();
+        fst5.writeToATT(new File(TEST_DIR + "testComplementOut2.att"));
+        fst4.intersect(fst5);
         fst4.writeToATT(new File(TEST_DIR + "testSubtractOut2.att"));
 
         assertEquals(3, fst4.nOfStates());
