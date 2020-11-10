@@ -411,13 +411,13 @@ public class MutableCompactTransducer extends MutableTransducer {
         for (int state = 0; state < transitions.size(); state++) {
             if (!done.contains(state)) {
                 done.add(state);
-                done.addAll(removeEpsilons(state));
+                removeEpsilons(state, done);
             }
         }
         epsilonFree = true;
     }
 
-    private Set<Integer> removeEpsilons(int state) {
+    private Set<Integer> removeEpsilons(int state, Set<Integer> done) {
         Set<Integer> reachables = new HashSet<>();
         List<CompactTransition> stateTrans = transitions.get(state);
         int i = Collections.binarySearch(stateTrans, ((long) alphabet.epsilonId()) << 48);
@@ -427,8 +427,12 @@ public class MutableCompactTransducer extends MutableTransducer {
             CompactTransition trans = stateTrans.get(i);
             if (trans.getInSym() == alphabet.epsilonId()) {
                 if (trans.getOutSym() == alphabet.epsilonId()) {
-                    reachables.add(trans.getToState());
-                    reachables.addAll(removeEpsilons(trans.getToState()));
+                    int toState = trans.getToState();
+                    reachables.add(toState);
+                    if (!done.contains(toState)) {
+                        done.add(toState);
+                        reachables.addAll(removeEpsilons(toState, done));
+                    }
                     stateTrans.remove(i);
                 }
                 else
@@ -994,14 +998,23 @@ public class MutableCompactTransducer extends MutableTransducer {
         determinize();
         otherMut.determinize();
 
+        // Add epsilon loops in order to compose deletions/insertions properly
+        if (type == CombinationType.COMPOSE) {
+            for (int s = 0; s < nOfStates(); s++)
+                addEpsilonTransition(s, s);
+            for (int s = 0; s < otherMut.nOfStates(); s++)
+                otherMut.addEpsilonTransition(s, s);
+        }
+
         CrossproductIterator iter = zip(otherMut);
         while (iter.advance()) {
             if (type == CombinationType.INTERSECT
                     && iter.getThisInId() == iter.getOtherInId() && iter.getThisOutId() == iter.getOtherOutId())
                 addTransition(iter.getJoinedState(), iter.getThisInId(), iter.getThisOutId(), iter.getJoinedToState());
-            else if (type == CombinationType.COMPOSE
-                    && iter.getThisOutId() == iter.getOtherInId())
-                addTransition(iter.getJoinedState(), iter.getThisInId(), iter.getOtherOutId(), iter.getJoinedToState());
+            else if (type == CombinationType.COMPOSE) {
+                if (iter.getThisOutId() == iter.getOtherInId())
+                    addTransition(iter.getJoinedState(), iter.getThisInId(), iter.getOtherOutId(), iter.getJoinedToState());
+            }
         }
 
         for (int s = 0; s < nOfStates(); s++)
@@ -1009,6 +1022,7 @@ public class MutableCompactTransducer extends MutableTransducer {
 
         deterministic = false;
         minimal = false;
+        removeEpsilons(); // Remove epsilon loops again
         removeNonfunctionalStates();
     }
 

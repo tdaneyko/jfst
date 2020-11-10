@@ -402,7 +402,7 @@ public class MutableOperationsTest extends TestCase {
 
         assertEquals(Collections.singleton("βδγ"), fst8.apply("BDG"));
         assertEquals(Collections.singleton("χχχεφγ"), fst8.apply("XXXEFG"));
-//        assertEquals(Collections.singleton("τσ"), fst8.apply("C"));
+        assertEquals(Collections.singleton("τσ"), fst8.apply("C"));
         assertEquals(Collections.singleton("βγ"), fst8.apply("BG"));
 
         fst1.compose(fst8);
@@ -410,7 +410,7 @@ public class MutableOperationsTest extends TestCase {
 
         assertEquals(Collections.singleton("βδγ"), fst1.apply("bdg"));
         assertEquals(Collections.singleton("χχχεφγ"), fst1.apply("xxxefg"));
-//        assertEquals(Collections.singleton("τσ"), fst1.apply("c"));
+        assertEquals(Collections.singleton("τσ"), fst1.apply("c"));
         assertEquals(Collections.emptySet(), fst1.apply("bg"));
     }
 
