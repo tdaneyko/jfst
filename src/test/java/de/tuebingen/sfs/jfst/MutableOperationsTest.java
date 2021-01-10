@@ -1,6 +1,7 @@
 package de.tuebingen.sfs.jfst;
 
 import de.tuebingen.sfs.jfst.io.FstProducer;
+import de.tuebingen.sfs.jfst.transduce.MutableTransducer;
 import de.tuebingen.sfs.jfst.transduce.compact.MutableCompactTransducer;
 import junit.framework.TestCase;
 
@@ -289,6 +290,20 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst1.apply("bg"));
     }
 
+    public void testProjectUp() throws IOException {
+        MutableCompactTransducer fst9 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable9.att")), FstProducer.HFST_ATT);
+
+        assertEquals(Collections.singleton("AC"), fst9.apply("ac"));
+        assertEquals(Collections.singleton("AX"), fst9.apply("ax"));
+
+        fst9.projectUp();
+        fst9.writeToATT(new File(TEST_DIR + "testProjectUp.att"));
+
+        assertEquals(Collections.singleton("ac"), fst9.apply("ac"));
+        assertEquals(Collections.singleton("ax"), fst9.apply("ax"));
+    }
+
     public void testUnion() throws IOException {
         MutableCompactTransducer fst1 = MutableCompactTransducer.readFromATT(new FileInputStream(
                 new File(TEST_DIR + "testMutable1.att")), FstProducer.HFST_ATT);
@@ -387,6 +402,40 @@ public class MutableOperationsTest extends TestCase {
         assertEquals(Collections.emptySet(), fst6.apply("ac"));
         assertEquals(Collections.singleton("abc"), fst6.apply("abc"));
         assertEquals(Collections.singleton("de"), fst6.apply("de"));
+    }
+
+    public void testPriorityUnion() throws IOException {
+        MutableCompactTransducer fst7 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable7.att")), FstProducer.HFST_ATT);
+        MutableCompactTransducer fst9 = MutableCompactTransducer.readFromATT(new FileInputStream(
+                new File(TEST_DIR + "testMutable9.att")), FstProducer.HFST_ATT);
+
+        assertEquals(Collections.singleton("ac"), fst7.apply("ac"));
+        assertEquals(Collections.emptySet(), fst7.apply("ax"));
+        assertEquals(Collections.singleton("dh"), fst7.apply("dh"));
+        assertEquals(Collections.singleton("dfg"), fst7.apply("dfg"));
+
+        assertEquals(Collections.singleton("AC"), fst9.apply("ac"));
+        assertEquals(Collections.singleton("AX"), fst9.apply("ax"));
+        assertEquals(Collections.emptySet(), fst9.apply("dh"));
+        assertEquals(Collections.emptySet(), fst9.apply("dfg"));
+
+//        fst7.priorityUnion(fst9);
+//        fst7.writeToATT(new File(TEST_DIR + "testPriorityUnionOut.att"));
+        MutableCompactTransducer upper = fst7.copy();
+        upper.projectUp();
+        upper.writeToATT(new File(TEST_DIR + "testPriorityUnionOut1.att"));
+        upper.complement();
+        upper.writeToATT(new File(TEST_DIR + "testPriorityUnionOut2.att"));
+        upper.compose(fst9);
+        upper.writeToATT(new File(TEST_DIR + "testPriorityUnionOut3.att"));
+        upper.minimize();
+        upper.writeToATT(new File(TEST_DIR + "testPriorityUnionOut.att"));
+
+        assertEquals(Collections.singleton("ac"), fst7.apply("ac"));
+        assertEquals(Collections.singleton("AX"), fst7.apply("ax"));
+        assertEquals(Collections.singleton("dh"), fst7.apply("dh"));
+        assertEquals(Collections.singleton("dfg"), fst7.apply("dfg"));
     }
 
     public void testComposition() throws IOException {

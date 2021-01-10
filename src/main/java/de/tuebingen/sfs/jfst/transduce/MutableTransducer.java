@@ -57,6 +57,10 @@ public abstract class MutableTransducer extends ApplicableTransducer {
 
     public abstract void union(Transducer other);
 
+    public void union(Acceptor other) {
+        union(other.asTransducer());
+    }
+
     public void priorityUnion(Transducer other) {
         MutableTransducer upper = this.getMutableCopy();
         upper.projectUp();
@@ -75,5 +79,7 @@ public abstract class MutableTransducer extends ApplicableTransducer {
 
     public abstract void compose(Transducer other);
 
-
+    public void compose(Acceptor other) {
+        compose(other.asTransducer());
+    }
 }

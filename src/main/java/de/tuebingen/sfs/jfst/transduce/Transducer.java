@@ -10,41 +10,7 @@ import java.util.Set;
 /**
  * A finite-state transducer.
  */
-public interface Transducer {
-
-    /**
-     * Write the Transducer to a file in JFST binary format.
-     * @param out The output file
-     * @throws IOException
-     */
-    void writeToBinary(OutputStream out) throws IOException;
-
-    /**
-     * Write the Transducer to a file in AT&T format.
-     * @param attFile The output file
-     * @throws IOException
-     */
-    void writeToATT(File attFile) throws IOException;
-
-    /**
-     * @return The number of states in this transducer
-     */
-    int nOfStates();
-
-    /**
-     * @return The number of transitions in this transducer
-     */
-    int nOfTransitions();
-
-    /**
-     * @return The alphabet of this transducer
-     */
-    Alphabet getAlphabet();
-
-    /**
-     * @return An iterator over the states of this transducer
-     */
-    StateIterator iter();
+public interface Transducer extends Automaton {
 
     /**
      * @return A mutable version of this transducer

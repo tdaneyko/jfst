@@ -994,6 +994,8 @@ public class MutableCompactTransducer extends MutableTransducer {
 
         for (String sym : alphabet.getSymbols())
             otherMut.addSymbol(sym);
+        for (String sym : other.getAlphabet().getSymbols())
+            this.addSymbol(sym);
 
         determinize();
         otherMut.determinize();
